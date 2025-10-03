@@ -97,6 +97,9 @@
             <div id="expanded-task-form" class="expanded-form" style="display: none;">
                 <h4>Add New Task</h4>
                 <form id="detailed-task-form">
+                    <!-- Hidden field for editing state -->
+                    <input type="hidden" id="editing-task-id" value="">
+                    
                     <!-- Task title input -->
                     <div class="form-group">
                         <label for="task-title-detailed">Task Title *</label>
@@ -148,7 +151,7 @@
                         <button type="button" id="cancel-task-btn" class="cancel-btn">
                             Cancel
                         </button>
-                        <button type="submit" id="save-task-btn" class="save-btn">
+                        <button type="submit" id="detailed-task-submit" class="primary-btn">
                             Save Task
                         </button>
                     </div>

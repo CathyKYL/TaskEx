@@ -1058,63 +1058,35 @@ function toggleTaskCompletion(taskId, completed) {
  * @param {string} taskId - ID of the task to edit
  */
 function startTaskEdit(taskId) {
-    console.log('Starting task edit:', taskId);
-    
+    console.log('Editing task via detailed form:', taskId);
     const task = currentTasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
-    if (!taskItem) return;
-    
-    // Add editing class
-    taskItem.classList.add('editing');
-    
-    const taskContent = taskItem.querySelector('.task-content');
-    const titleDiv = taskContent.querySelector('.task-title');
-    const detailsDiv = taskContent.querySelector('.task-details');
-    
-    // Replace title with input
-    const titleInput = document.createElement('input');
-    titleInput.className = 'task-edit-input';
-    titleInput.value = task.title;
-    titleDiv.replaceWith(titleInput);
-    
-    // Replace details with textarea (if exists)
-    let detailsTextarea = null;
-    if (detailsDiv) {
-        detailsTextarea = document.createElement('textarea');
-        detailsTextarea.className = 'task-edit-textarea';
-        detailsTextarea.value = task.notes || '';
-        detailsDiv.replaceWith(detailsTextarea);
-    } else if (task.notes) {
-        // Create textarea for notes if none existed
-        detailsTextarea = document.createElement('textarea');
-        detailsTextarea.className = 'task-edit-textarea';
-        detailsTextarea.value = task.notes;
-        taskContent.appendChild(detailsTextarea);
+    if (!task) { showError('Task not found'); return; }
+
+    // Open the detailed form
+    toggleExpandedForm(true);
+
+    // Prefill fields
+    const titleInput   = document.getElementById('task-title-detailed');
+    const detailsInput = document.getElementById('task-details');
+    const urlInput     = document.getElementById('task-url');
+    const editingId    = document.getElementById('editing-task-id');
+    const submitBtn    = document.getElementById('detailed-task-submit');
+
+    if (titleInput)   titleInput.value = task.title || '';
+
+    // Parse notes -> details + URL (URL line starts with "URL: ")
+    let details = '';
+    let url = '';
+    if (task.notes) {
+        const m = task.notes.match(/URL:\s*(https?:\/\/[^\s\n]+)/i);
+        if (m) url = m[1];
+        details = task.notes.replace(/\n*URL:\s*https?:\/\/[^\s\n]+/i, '').trim();
     }
-    
-    // Add edit actions
-    const editActions = document.createElement('div');
-    editActions.className = 'task-edit-actions';
-    
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'save-edit-btn';
-    saveBtn.textContent = 'Save';
-    saveBtn.addEventListener('click', () => saveTaskEdit(taskId, titleInput.value, detailsTextarea?.value || ''));
-    
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'cancel-edit-btn';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => cancelTaskEdit(taskId));
-    
-    editActions.appendChild(saveBtn);
-    editActions.appendChild(cancelBtn);
-    taskContent.appendChild(editActions);
-    
-    // Focus on title input
-    titleInput.focus();
-    titleInput.select();
+    if (detailsInput) detailsInput.value = details || '';
+    if (urlInput)     urlInput.value     = url || '';
+
+    if (editingId)  editingId.value = taskId;
+    if (submitBtn)  submitBtn.textContent = 'Update Task';
 }
 
 /**
@@ -1825,6 +1797,12 @@ function closeExpandedForm() {
     document.querySelectorAll('.due-btn').forEach(btn => {
         btn.classList.remove('active');
     });
+    
+    // Clear editing state
+    const editingId = document.getElementById('editing-task-id');
+    if (editingId) editingId.value = '';
+    const submitBtn = document.getElementById('detailed-task-submit');
+    if (submitBtn) submitBtn.textContent = 'Save Task';
 }
 
 /**
@@ -1833,91 +1811,78 @@ function closeExpandedForm() {
  */
 function handleDetailedTaskSubmit(event) {
     event.preventDefault();
-    
-    if (!isAuthenticated) {
-        showError('Please log in to Google first');
-        return;
-    }
-    
-    // Get form values
-    const title = document.getElementById('task-title-detailed').value.trim();
+    if (!isAuthenticated) { showError('Please log in to Google first'); return; }
+
+    const title   = document.getElementById('task-title-detailed').value.trim();
     const details = document.getElementById('task-details').value.trim();
-    const url = document.getElementById('task-url').value.trim();
-    const customDueDate = document.getElementById('custom-due-date').value;
-    // Auto-sync to calendar if task has a due date (no checkbox needed)
+    const url     = document.getElementById('task-url').value.trim();
+    const customDueDate = document.getElementById('custom-due-date')?.value || '';
+
+    if (!title) { showError('Task title is required'); return; }
+
+    const editingId = document.getElementById('editing-task-id')?.value || '';
+
+    // Build notes (details + optional URL)
+    let notes = details || '';
+    if (url) notes += (notes ? '\n\n' : '') + `URL: ${url}`;
+
+    // Build task data; keep due behavior the same as before
+    const taskData = { title };
+    if (notes) taskData.notes = notes;
+
     let syncToCalendar = false;
-    
-    if (!title) {
-        showError('Task title is required');
-        return;
-    }
-    
-    // Build task data for Google Tasks API
-    const taskData = {
-        title: title  // Maps to Google Tasks 'title' field
-    };
-    
-    // Build notes field combining details and URL
-    let notes = '';
-    if (details) {
-        notes += details;
-    }
-    if (url) {
-        notes += (notes ? '\n\n' : '') + `URL: ${url}`;
-    }
-    if (notes) {
-        taskData.notes = notes;  // Maps to Google Tasks 'notes' field
-    }
-    
-    // Handle due date - maps to Google Tasks 'due' field
     const activeDueBtn = document.querySelector('.due-btn.active');
     if (activeDueBtn) {
         const dueType = activeDueBtn.getAttribute('data-due');
         if (dueType === 'today') {
             taskData.due = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-            syncToCalendar = true; // Auto-sync tasks with due dates
+            syncToCalendar = true;
         } else if (dueType === 'tomorrow') {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            taskData.due = tomorrow.toISOString().split('T')[0] + 'T00:00:00.000Z';
-            syncToCalendar = true; // Auto-sync tasks with due dates
+            const t = new Date(); t.setDate(t.getDate() + 1);
+            taskData.due = t.toISOString().split('T')[0] + 'T00:00:00.000Z';
+            syncToCalendar = true;
         }
     } else if (customDueDate) {
         taskData.due = new Date(customDueDate).toISOString();
-        syncToCalendar = true; // Auto-sync tasks with due dates
+        syncToCalendar = true;
     }
-    
-    console.log('Creating detailed task:', taskData);
-    
-    // Call Google Tasks API through background script
-    chrome.runtime.sendMessage({
-        action: 'createTask',
-        data: taskData
-    }, (response) => {
+
+    // EDIT mode -> update existing task
+    if (editingId) {
+        chrome.runtime.sendMessage({
+            action: 'updateTask',
+            data: { taskId: editingId, taskData }
+        }, (response) => {
+            if (response && response.success) {
+                // Update local model
+                const t = currentTasks.find(x => x.id === editingId);
+                if (t) { t.title = taskData.title; t.notes = taskData.notes; t.due = taskData.due || t.due; }
+                renderTasks();
+                showStatus('Task updated successfully!', 'success');
+                // Clear editing state
+                document.getElementById('editing-task-id').value = '';
+                const submitBtn = document.getElementById('detailed-task-submit');
+                if (submitBtn) submitBtn.textContent = 'Save Task';
+                closeExpandedForm();
+            } else {
+                showError('Failed to update task: ' + (response?.error || 'Unknown error'));
+            }
+        });
+        return;
+    }
+
+    // ADD mode -> create task (existing behavior)
+    chrome.runtime.sendMessage({ action: 'createTask', data: taskData }, (response) => {
         if (response && response.success) {
             showStatus('Task created successfully!', 'success');
-            getTasks(); // Refresh task list
-            
-            // If sync to calendar is checked, create a corresponding calendar event
+            getTasks();
             if (syncToCalendar && taskData.due) {
                 createCalendarEventFromTask(title, details, taskData.due, url);
             }
-            
-            closeExpandedForm(); // Close and reset form
+            closeExpandedForm();
         } else {
-            console.error('Error creating task - full response:', response);
-            console.error('Chrome runtime error:', chrome.runtime.lastError);
-            // Show user-friendly error message
             const errorMsg = response?.error || 'Unknown error';
-            if (errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
-                showError('Your Google login has expired. Please log out and log back in.');
-            } else if (errorMsg.includes('403') || errorMsg.includes('forbidden')) {
-                showError('Permission denied. Please check your Google Tasks permissions.');
-            } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
-                showError('Could not connect to Google Tasks. Please check your internet connection.');
-            } else {
-                showError(`Could not save task: ${errorMsg}`);
-            }
+            showError(`Could not save task: ${errorMsg}`);
         }
     });
 }

@@ -106,13 +106,18 @@ html, body {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 8px 12px;
+    padding: 8px 16px;           /* extra right padding fixes clip */
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
 }
 
 #brand {
     white-space: nowrap;
+    flex: 0 0 auto;
+    margin-right: 4px;
     font-size: 18px;
     font-weight: 700;
     color: var(--accent-primary);
@@ -122,24 +127,26 @@ html, body {
     display: flex;
     align-items: center;
     gap: 12px;
-    justify-content: space-between; /* evenly distributed w/ margins */
+    justify-content: space-between;   /* evenly distribute */
     flex: 1 1 auto;
     min-width: 0;
+    overflow: visible;
 }
 
 .tab-button {
-    flex: 0 0 auto; /* fit to content, don't stretch off the edge */
+    flex: 0 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 6px 12px;
     border-radius: 999px;
-    line-height: 1;
     min-height: 30px;
     color: var(--text-primary);
     background: transparent;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .tab-button.active {
