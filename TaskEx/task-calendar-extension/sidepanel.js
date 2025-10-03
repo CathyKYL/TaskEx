@@ -33,6 +33,10 @@ let timeFormat = '12h';          // Time format: '12h' or '24h'
 document.addEventListener('DOMContentLoaded', function() {
     console.log('TaskEx side panel loaded!');
     
+    // Sanity check: verify critical elements exist
+    console.log('[init] settings element exists?', !!document.getElementById('settings-content'));
+    console.log('[init] settings button exists?', !!document.getElementById('settings-tab-btn'));
+    
     // Load user settings first (theme, time format)
     loadSettings();
     loadStarredTasks();
@@ -205,12 +209,21 @@ function checkAuthenticationStatus() {
                 // Update Google account UI in Settings
                 updateGoogleAccountUI(true);
                 
+                // If Settings is currently shown, refresh it
+                const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
+                if (settingsShown) initializeSettingsTab();
+                
                 // Ensure To-Do tab is visible and tasks are loaded
                 showTab('todo');
             } else {
                 // User is not logged in - show login prompt
                 console.log('User is not authenticated');
                 updateGoogleAccountUI(false);
+                
+                // If Settings is currently shown, refresh it
+                const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
+                if (settingsShown) initializeSettingsTab();
+                
                 showLoginPrompt();
             }
         } else {
@@ -429,6 +442,21 @@ function updateTimeFormatUI() {
 }
 
 /**
+ * Initialize Settings tab when it becomes visible.
+ * Ensures toggles & account state reflect current values.
+ */
+function initializeSettingsTab() {
+  console.log('[Settings] initializeSettingsTab()');
+  try {
+    updateThemeToggleUI();
+    updateTimeFormatUI();
+    updateGoogleAccountUI(isAuthenticated);
+  } catch (e) {
+    console.error('[Settings] init failed:', e);
+  }
+}
+
+/**
  * Format time according to user's preference
  * @param {Date} date - Date object to format
  * @returns {string} - Formatted time string
@@ -496,6 +524,10 @@ function setupSettingsHandlers() {
                 if (result.success) {
                     showStatus('Successfully connected to Google!', 'success');
                     updateGoogleAccountUI(true);
+                    
+                    // If Settings is currently shown, refresh it
+                    const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
+                    if (settingsShown) initializeSettingsTab();
                 } else {
                     showError('Failed to connect to Google: ' + result.error);
                 }
@@ -514,6 +546,11 @@ function setupSettingsHandlers() {
                 if (result.success) {
                     showStatus('Successfully disconnected from Google', 'success');
                     updateGoogleAccountUI(false);
+                    
+                    // If Settings is currently shown, refresh it
+                    const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
+                    if (settingsShown) initializeSettingsTab();
+                    
                     // Clear data
                     currentTasks = [];
                     currentEvents = [];
@@ -1631,75 +1668,69 @@ function setupTaskManagementListeners() {
     }
 }
 
-/**
- * Set up tab switching functionality for all three tabs
- */
 function setupTabSwitching() {
-    const tabButtons = document.querySelectorAll('.tab-button');
-           const tabContents = {
-               'todo': document.getElementById('todo-content'),
-               'calendar': document.getElementById('calendar-content'),
-               'savetab': document.getElementById('savetab-content'),
-               'settings': document.getElementById('settings-content')
-           };
-    
-    // Add click handler to each tab button
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabName = button.getAttribute('data-tab');
-            switchToTab(tabName);
-        });
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = {
+    'todo': document.getElementById('todo-content'),
+    'calendar': document.getElementById('calendar-content'),
+    'savetab': document.getElementById('savetab-content'),
+    'settings': document.getElementById('settings-content')
+  };
+
+  function applyTabVisibility(activeKey) {
+    // Hide all
+    Object.values(tabContents).forEach(el => {
+      if (!el) return;
+      el.classList.remove('active');
+      el.style.display = 'none'; // hard guard against CSS overrides
     });
-    
-    /**
-     * Switch to a specific tab (global function)
-     * @param {string} tabName - Name of tab to switch to ('todo', 'calendar', 'settings')
-     */
-    window.showTab = function(tabName) {
-        console.log('[showTab] switching to', tabName);
+    // De-activate buttons
+    tabButtons.forEach(btn => btn.classList.remove('active'));
 
-        const contents = {
-            'todo':     document.getElementById('todo-content'),
-            'calendar': document.getElementById('calendar-content'),
-            'savetab':  document.getElementById('savetab-content'), // label can be LinkHive, ID stays savetab-content
-            'settings': document.getElementById('settings-content')
-        };
-
-        // Hide all tab panes
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-
-        const target = contents[tabName];
-        if (!target) {
-            console.error('[showTab] Missing content element for tab:', tabName);
-            const fallback = contents['todo'];
-            if (fallback) fallback.classList.add('active');
-            return;
-        }
-
-        target.classList.add('active');
-
-        // Button active state
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-        const activeButton = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
-        if (activeButton) activeButton.classList.add('active');
-
-        // Load data
-        if (tabName === 'todo') {
-            getTasks();
-        } else if (tabName === 'calendar') {
-            if (isAuthenticated && currentEvents.length === 0) getEvents();
-        } else if (tabName === 'savetab') {
-            // Initialize Save Tab functionality when switching to Save Tab
-            if (typeof initSaveTab === 'function') {
-                initSaveTab();
-            }
-        }
-    };
-    
-    // Also create a local reference for internal use
-    function switchToTab(tabName) {
-        return window.showTab(tabName);
+    // Show active
+    const activeContent = tabContents[activeKey];
+    if (!activeContent) {
+      console.error('[showTab] Missing content element for tab:', activeKey);
+      return;
     }
+    activeContent.classList.add('active');
+    activeContent.style.display = 'block';
+
+    const activeButton = document.querySelector(`[data-tab="${activeKey}"]`);
+    if (activeButton) activeButton.classList.add('active');
+
+    // Lazy loads
+    if (activeKey === 'todo') {
+      getTasks();
+    } else if (activeKey === 'calendar' && isAuthenticated && currentEvents.length === 0) {
+      getEvents();
+    } else if (activeKey === 'savetab') {
+      if (typeof initSaveTab === 'function') initSaveTab();
+    } else if (activeKey === 'settings') {
+      initializeSettingsTab();
+    }
+  }
+
+  // Click handlers
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = button.getAttribute('data-tab');
+      applyTabVisibility(tabName);
+    });
+  });
+
+  // Make globally callable
+  window.showTab = function(tabName) {
+    console.log('[showTab] switching to', tabName);
+    applyTabVisibility(tabName);
+  };
+
+  // Safety: explicit buttons (in case querySelectorAll misses anything)
+  const settingsBtn = document.getElementById('settings-tab-btn');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => window.showTab('settings'));
+
+  // Initial tab
+  window.requestAnimationFrame(() => window.showTab('todo'));
 }
 
 // =============================================================================
@@ -3112,3 +3143,6 @@ function showError(message) {
 }
 
 console.log('TaskEx popup.js loaded successfully!');
+
+
+

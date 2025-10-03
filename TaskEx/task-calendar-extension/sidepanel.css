@@ -105,19 +105,17 @@ html, body {
 #app-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 8px 16px;           /* extra right padding fixes clip */
+    gap: 12px;                  /* small gap to save space */
+    padding: 8px 10px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
     width: 100%;
     box-sizing: border-box;
-    overflow: visible;
 }
 
-#brand {
-    white-space: nowrap;
+#brand { 
     flex: 0 0 auto;
-    margin-right: 4px;
+    white-space: nowrap;
     font-size: 18px;
     font-weight: 700;
     color: var(--accent-primary);
@@ -126,32 +124,43 @@ html, body {
 #nav-tabs {
     display: flex;
     align-items: center;
-    gap: 12px;
-    justify-content: space-between;   /* evenly distribute */
+    justify-content: space-between; /* or space-evenly if preferred */
+    gap: 8px;                       /* smaller gap */
     flex: 1 1 auto;
-    min-width: 0;
-    overflow: visible;
+    min-width: 0;                   /* critical for shrink */
+    overflow-x: hidden;            /* change to auto if you prefer scroll-on-overflow */
 }
 
-.tab-button {
-    flex: 0 1 auto;
+#nav-tabs .tab-button {
+    flex: 1 1 0;
+    min-width: 0;                   /* allow shrinking */
+    white-space: nowrap;
+    padding: 6px 10px;
+    text-align: center;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 12px;
     border-radius: 999px;
     min-height: 30px;
     color: var(--text-primary);
     background: transparent;
     border: none;
     cursor: pointer;
-    white-space: nowrap;
-    max-width: 100%;
 }
 
 .tab-button.active {
     background: var(--accent-primary);
     color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 360px) {
+    #nav-tabs .tab-button { 
+        padding: 4px 8px; 
+        font-size: 13px; 
+    }
 }
 
 .tab-button:focus {
@@ -322,28 +331,7 @@ html, body {
     gap: 10px;
 }
 
-.tab-button {
-    padding: 6px 12px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.tab-button:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-}
-
-.tab-button.active {
-    background: var(--accent-primary);
-    color: white;
-}
+/* Duplicate .tab-button rules removed - using #nav-tabs .tab-button above */
 
 .auth-section {
     display: flex;
@@ -1661,3 +1649,17 @@ html, body {
 .mt-2 { margin-top: 16px; }
 .mt-3 { margin-top: 24px; }
 
+/* --- Visibility guards for tab panes (prevents accidental overrides) --- */
+#todo-content,
+#calendar-content,
+#savetab-content,
+#settings-content {
+  display: none;
+}
+
+#todo-content.active,
+#calendar-content.active,
+#savetab-content.active,
+#settings-content.active {
+  display: block;
+}
