@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaceBomp - Whack-A-Mole Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game Title -->
+        <header>
+            <h1>FaceBomp</h1>
+            <p>Click on the popping faces to earn points!</p>
+        </header>
+
+        <!-- Game Controls and Info -->
+        <div class="game-info">
+            <div class="score-display">
+                <span>Score: </span>
+                <span id="score">0</span>
+            </div>
+            
+            <div class="timer-display">
+                <span>Time: </span>
+                <span id="timer">30</span>
+                <span>s</span>
+            </div>
+            
+            <button id="start-button" class="start-button">Start Game</button>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-board">
+            <div class="hole" id="hole-1">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+            <div class="hole" id="hole-2">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+            <div class="hole" id="hole-3">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+            <div class="hole" id="hole-4">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+            <div class="hole" id="hole-5">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+            <div class="hole" id="hole-6">
+                <img src="Matt.jpg" alt="Face" class="face-image" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Final Message Display -->
+        <div id="final-message" class="final-message" style="display: none;">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-button" class="restart-button">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="whack-sound" preload="auto">
+        <source src="audio/whack-sound.mp3" type="audio/mpeg">
+        <source src="audio/whack-sound.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <audio id="game-end-sound" preload="auto">
+        <source src="audio/game-end-sound.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+</html>

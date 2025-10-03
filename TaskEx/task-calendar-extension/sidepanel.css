@@ -1,0 +1,1656 @@
+/* 
+   SIDEPANEL.CSS - TaskEx Chrome Extension Styles
+   This file contains all styling including the theme system and responsive layout.
+   
+   THEME SYSTEM EXPLANATION:
+   - Uses CSS custom properties (variables) for dynamic theming
+   - Two themes: light and dark, controlled by body class
+   - Theme colors are defined in :root and overridden for dark theme
+   - All components reference theme variables for consistent styling
+*/
+
+/* =============================================================================
+   CSS CUSTOM PROPERTIES - Theme color variables
+   ============================================================================= */
+
+:root {
+    /* Light theme colors (default) */
+    --bg-primary: #F2F0EF;           /* Main background */
+    --bg-secondary: #FFFFFF;         /* Cards, forms background */
+    --bg-tertiary: #FAFAFA;          /* Subtle backgrounds */
+    --bg-elevated: #FFFFFF;          /* Elevated card backgrounds */
+    
+    --text-primary: #2C2C2C;         /* Main text color */
+    --text-secondary: #666666;       /* Secondary text */
+    --text-muted: #999999;           /* Muted text */
+    
+    --accent-primary: #2C5F34;       /* Primary buttons, active states */
+    --accent-hover: #1E4125;         /* Hover states */
+    --accent-light: #E8F5E8;         /* Light accent backgrounds */
+    --accent-muted: #E8F5E8;         /* Muted accent background */
+    
+    --border-color: #E0E0E0;         /* Borders and dividers */
+    --shadow-color: rgba(0, 0, 0, 0.1); /* Shadows */
+    
+    --success-color: #4CAF50;        /* Success messages */
+    --error-color: #F44336;          /* Error messages */
+    --warning-color: #FF9800;        /* Warning messages */
+    --info-color: #2196F3;           /* Info messages */
+}
+
+/* Dark theme colors */
+.theme-dark {
+    --bg-primary: #353839;           /* Main background */
+    --bg-secondary: #2C2C2C;         /* Cards, forms background */
+    --bg-tertiary: #404040;          /* Subtle backgrounds */
+    --bg-elevated: #2C2C2C;          /* Elevated card backgrounds */
+    
+    --text-primary: #FFFFFF;         /* Main text color */
+    --text-secondary: #CCCCCC;       /* Secondary text */
+    --text-muted: #999999;           /* Muted text */
+    
+    --accent-primary: #4F7942;       /* Primary buttons, active states */
+    --accent-hover: #3D5F33;         /* Hover states */
+    --accent-light: #2D4A2D;         /* Light accent backgrounds */
+    --accent-muted: #2D4A2D;         /* Muted accent background */
+    
+    --border-color: #555555;         /* Borders and dividers */
+    --shadow-color: rgba(0, 0, 0, 0.3); /* Shadows */
+    
+    --success-color: #66BB6A;        /* Success messages */
+    --error-color: #EF5350;          /* Error messages */
+    --warning-color: #FFB74D;        /* Warning messages */
+    --info-color: #42A5F5;           /* Info messages */
+}
+
+/* =============================================================================
+   GLOBAL STYLES - Base styles and box-sizing
+   ============================================================================= */
+
+/* Ensure proper box-sizing for all elements */
+* {
+    box-sizing: border-box;
+}
+
+/* Side panel specific sizing */
+html, body {
+    width: 360px; /* 10% thinner than typical 400px */
+    max-width: 360px;
+    min-width: 360px;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Main container */
+.sidepanel-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    overflow: hidden;
+}
+
+/* =============================================================================
+   TOP BAR LAYOUT - App title, tabs, and auth buttons
+   ============================================================================= */
+
+/* Header layout & spacing */
+#app-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+#brand {
+    white-space: nowrap;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+#nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between; /* evenly distributed w/ margins */
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.tab-button {
+    flex: 0 0 auto; /* fit to content, don't stretch off the edge */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    line-height: 1;
+    min-height: 30px;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.tab-button.active {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+.tab-button:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Generic toolbars */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+}
+
+.toolbar .spacer {
+    flex: 1;
+}
+
+/* To-Do toolbar specific */
+#todo-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+}
+
+#todo-toolbar .spacer {
+    flex: 1;
+}
+
+#task-search {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.filter-dropdown {
+    flex: 0 0 150px;
+}
+
+#add-task-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Icon-only refresh buttons (no box) */
+.icon-btn {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text-primary) !important;
+}
+
+.icon-btn:hover {
+    opacity: 0.85;
+}
+
+.icon-btn:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* If using emoji/icon font, ensure consistent size */
+.icon-btn, .icon-btn i, .icon-btn svg {
+    font-size: 18px;
+}
+
+/* Theme-aware icons */
+.icon-btn svg {
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+/* Input row helper for inline buttons */
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-row .form-input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Calendar toolbar specific */
+#calendar-content-type, #calendar-toolbar {
+    padding-left: 12px; /* aligns Add Event with Events Only row */
+}
+
+/* Circle ? help icon */
+.help-circle {
+    width: 22px; height: 22px;
+    border: 1px solid var(--border, #3a3a3a);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600;
+}
+
+/* Rounded-square button style to match others */
+.rounded-square,
+#clear-all-btn,
+#save-current-tab-btn,
+#settings-login-btn,
+#settings-logout-btn {
+    border-radius: 10px;       /* align with rest of the app */
+    padding: 8px 12px;
+}
+
+/* Settings page styles */
+.settings-title {
+    padding: 8px 12px;
+}
+
+.settings-card {
+    margin: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-elevated);
+}
+
+.segmented {
+    display: inline-flex;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.segmented .toggle-option {
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.segmented .toggle-option.active {
+    background: var(--accent-muted);
+    color: var(--text-primary);
+}
+
+.account-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+}
+
+.status-dot.connected {
+    background: var(--accent);
+}
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.tab-button {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tab-button:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.tab-button.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.auth-section {
+    display: flex;
+    align-items: center;
+}
+
+.login-btn, .logout-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.login-btn:hover, .logout-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+}
+
+/* =============================================================================
+   TAB CONTENT AREA - Main content area for each tab
+   ============================================================================= */
+
+.tab-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* =============================================================================
+   TO-DO TAB STYLES - Task management interface
+   ============================================================================= */
+
+/* Todo controls layout - three elements in one row */
+.todo-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.todo-controls > * {
+    flex: 1;
+    min-width: 0; /* prevent overflow */
+}
+
+/* Add task button */
+.add-task-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 12px; /* Increased horizontal padding for better centering */
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    min-width: 0;
+    text-align: center; /* Ensure text is centered */
+}
+
+.add-task-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.add-icon {
+    font-size: 14px;
+}
+
+.add-text {
+    font-size: 12px;
+}
+
+/* Search input */
+.search-input {
+    flex: 2;                         /* Takes more space than other elements */
+    min-width: 0;
+    padding: 10px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* Filter dropdown */
+.filter-dropdown {
+    flex: 1;                         /* Takes equal space with add button */
+    min-width: 0;
+    padding: 10px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-dropdown:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* Refresh icon button */
+.refresh-icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.refresh-icon-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+/* Expanded task form */
+.expanded-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.expanded-form h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Form groups */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* Due date buttons */
+.due-date-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.due-btn {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.due-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.due-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.date-picker {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.cancel-btn, .save-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.cancel-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.save-btn {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.save-btn:hover {
+    background: var(--accent-hover);
+}
+
+/* Tasks list */
+.tasks-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.task-item:hover {
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transform: translateY(-1px);
+}
+
+.task-item:hover .task-actions {
+    opacity: 1;
+}
+
+/* Task checkbox */
+.task-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.task-checkbox:hover {
+    border-color: var(--accent-primary);
+}
+
+.task-checkbox.completed {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.task-checkbox.completed::after {
+    content: '✓';
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Task content */
+.task-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+
+.task-title.completed {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.task-details {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+.task-url {
+    font-size: 11px;
+    color: var(--accent-primary);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.task-url:hover {
+    text-decoration: underline;
+}
+
+.task-due-date {
+    font-size: 11px;
+    color: var(--warning-color);
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* Task actions */
+.task-actions {
+    display: flex;
+    flex-direction: column;              /* Vertical layout for buttons */
+    gap: 4px;
+    opacity: 0;                      /* Hidden by default */
+    transition: opacity 0.3s ease;
+}
+
+.task-item:hover .task-actions {
+    opacity: 1;                      /* Show on hover */
+}
+
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.action-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.delete-btn:hover {
+    background: #ffebee;
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.star-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.star-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+/* Starred task styling */
+.task-item.starred {
+    background: linear-gradient(135deg, var(--accent-light), var(--bg-secondary));
+    border-left: 3px solid var(--accent-primary);
+}
+
+/* =============================================================================
+   CALENDAR TAB STYLES - Calendar events interface
+   ============================================================================= */
+
+/* Calendar controls container */
+.calendar-controls {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 8px;
+}
+
+/* Content toggle container (full width) */
+.content-toggle-container {
+    margin-bottom: 16px;
+}
+
+.content-toggle-group {
+    display: flex;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.content-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+    flex: 1; /* Make buttons equal width */
+}
+
+.content-toggle-btn:last-child {
+    border-right: none;
+}
+
+.content-toggle-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.content-toggle-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.content-toggle-btn.active:hover {
+    background: var(--accent-hover);
+}
+
+/* Calendar action buttons */
+.calendar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.primary-btn, .secondary-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.primary-btn {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.primary-btn:hover {
+    background: var(--accent-hover);
+}
+
+.secondary-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.secondary-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+}
+
+/* Event form */
+.event-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.event-form h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.datetime-group {
+    display: flex;
+    gap: 8px;
+}
+
+.datetime-group .form-input {
+    flex: 1;
+}
+
+/* Events list */
+.events-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.events-date-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin: 16px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.events-date-group {
+    margin-bottom: 16px;
+}
+
+.event-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.event-item:hover {
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transform: translateY(-1px);
+}
+
+.event-item:hover .event-actions {
+    opacity: 1;
+}
+
+/* Event content */
+.event-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.event-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+
+.event-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.event-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+/* Event actions */
+.event-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.event-item:hover .event-actions {
+    opacity: 1;
+}
+
+.event-actions .action-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+}
+
+.event-actions .edit-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.event-actions .delete-btn:hover {
+    background: #ffebee;
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+/* Task-event styling */
+.task-event {
+    border-left: 3px solid var(--accent-primary);
+    background: linear-gradient(135deg, var(--accent-light), var(--bg-secondary));
+}
+
+.task-event .event-title {
+    font-weight: 600;
+}
+
+.task-event .complete-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.task-event .complete-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+/* No events message */
+.no-events-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* =============================================================================
+   SAVE TAB TAB STYLES - Tab saving and organization interface
+   ============================================================================= */
+
+/* Save Tab header */
+.savetab-header {
+    margin-bottom: 20px;
+}
+
+.savetab-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.savetab-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Section headers */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Section title with help tooltip */
+.section-title-with-help {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.help-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.help-icon {
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: help;
+    transition: color 0.2s ease;
+}
+
+.help-icon:hover {
+    color: var(--accent-primary);
+}
+
+.tooltip-content {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.help-tooltip:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Save current tab section */
+.save-current-tab-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+/* Save tab form */
+.save-tab-form {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+/* Group selector */
+.group-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.group-selector select {
+    margin-bottom: 8px;
+}
+
+/* Saved tabs section */
+.saved-tabs-section {
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.saved-tabs-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Danger button styling */
+.danger-btn {
+    background: var(--error-color);
+    color: white;
+    border: 1px solid var(--error-color);
+}
+
+.danger-btn:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
+
+/* Saved tabs container */
+.saved-tabs-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 16px;
+}
+
+/* Saved tab group */
+.saved-tab-group {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.group-header:hover {
+    background: var(--accent-light);
+}
+
+.group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.group-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.group-toggle-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+/* Group content */
+.group-content {
+    background: var(--bg-primary);
+}
+
+/* Saved tab item */
+.saved-tab-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.saved-tab-item:last-child {
+    border-bottom: none;
+}
+
+.saved-tab-item:hover {
+    background: var(--bg-secondary);
+}
+
+.saved-tab-item .tab-content {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* Tab favicon */
+.tab-favicon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.tab-favicon img {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+}
+
+/* Tab info */
+.tab-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tab-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    word-wrap: break-word;
+    line-height: 1.3;
+}
+
+.tab-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-style: italic;
+    word-wrap: break-word;
+    line-height: 1.3;
+}
+
+.tab-url {
+    font-size: 11px;
+    color: var(--text-muted);
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+/* Tab actions */
+.saved-tab-item .tab-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.saved-tab-item:hover .tab-actions {
+    opacity: 1;
+}
+
+.saved-tab-item .action-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.3s ease;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.saved-tab-item .action-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.saved-tab-item .delete-btn:hover {
+    background: #ffebee;
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+/* No saved tabs message */
+.no-saved-tabs-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.no-saved-tabs-message p {
+    margin: 8px 0;
+}
+
+/* =============================================================================
+   SETTINGS TAB STYLES - User preferences interface
+   ============================================================================= */
+
+.settings-header {
+    margin-bottom: 24px;
+}
+
+.settings-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.setting-group {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.setting-group h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.setting-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.setting-help {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 8px;
+    line-height: 1.3;
+    font-style: italic;
+}
+
+/* Google Account Controls */
+.google-account-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.account-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-primary);
+    border-radius: 6px;
+    color: var(--accent-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.status-icon {
+    font-size: 16px;
+}
+
+.status-text {
+    flex: 1;
+}
+
+/* 
+   TOGGLE GROUP STYLING EXPLANATION:
+   Toggle groups use flexbox to create side-by-side buttons
+   - Only one option can be active at a time
+   - Active state is controlled by JavaScript adding 'active' class
+   - Hover effects provide visual feedback
+   - Icons and labels are clearly separated for accessibility
+*/
+
+.toggle-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.toggle-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-option:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+}
+
+.toggle-option.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.toggle-option.active:hover {
+    background: var(--accent-hover);
+}
+
+.toggle-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* =============================================================================
+   STATUS MESSAGES - Success, error, and info notifications
+   ============================================================================= */
+
+.status-messages {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.status-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    animation: slideInUp 0.3s ease;
+}
+
+.status-message.success {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-message.error {
+    background: var(--error-color);
+    color: white;
+}
+
+.status-message.warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.status-message.info {
+    background: var(--info-color);
+    color: white;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* =============================================================================
+   FOOTER - Version information and credits
+   ============================================================================= */
+
+.footer {
+    padding: 12px 16px;
+    text-align: center;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.footer p {
+    margin: 2px 0;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS - Mobile and small screen optimizations
+   ============================================================================= */
+
+/* Responsive adjustments for view controls */
+@media (max-width: 400px) {
+    .calendar-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .view-toggle-group,
+    .content-toggle-group {
+        justify-content: center;
+    }
+    
+    .calendar-actions {
+        justify-content: center;
+    }
+}
+
+/* Responsive adjustments for todo controls */
+@media (max-width: 320px) {
+    .todo-controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .todo-controls > * {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* =============================================================================
+   UTILITY CLASSES - Helper classes for common styling needs
+   ============================================================================= */
+
+.loading-message {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.error-message {
+    text-align: center;
+    padding: 20px;
+    color: var(--error-color);
+    font-weight: 500;
+}
+
+.no-items {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Hide elements */
+.hidden {
+    display: none !important;
+}
+
+/* Text utilities */
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+/* Spacing utilities */
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+

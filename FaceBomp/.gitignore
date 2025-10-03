@@ -1,0 +1,22 @@
+# FaceBomp Game - Git Ignore File
+
+# Audio files (optional - you might want to include these)
+# Uncomment the lines below if you want to exclude audio files from Git
+# audio/*.mp3
+# audio/*.wav
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+

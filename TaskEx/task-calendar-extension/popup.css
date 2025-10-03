@@ -1,0 +1,2523 @@
+/* 
+   POPUP.CSS - TaskEx Chrome Extension Styles
+   This file contains all styling including the theme system and responsive layout.
+   
+   THEME SYSTEM EXPLANATION:
+   - Uses CSS custom properties (variables) for dynamic theming
+   - Two themes: light and dark, controlled by body class
+   - Theme colors are defined in :root and overridden for dark theme
+   - All components reference theme variables for consistent styling
+*/
+
+/* =============================================================================
+   CSS CUSTOM PROPERTIES - Theme color variables
+   ============================================================================= */
+
+:root {
+    /* Light theme colors (default) */
+    --bg-primary: #F2F0EF;           /* Main background */
+    --bg-secondary: #FFFFFF;         /* Cards, forms background */
+    --bg-tertiary: #FAFAFA;          /* Subtle backgrounds */
+    
+    --text-primary: #2C2C2C;         /* Main text color */
+    --text-secondary: #666666;       /* Secondary text */
+    --text-muted: #999999;           /* Muted text */
+    
+    --accent-primary: #2C5F34;       /* Primary buttons, active states */
+    --accent-hover: #1E4125;         /* Hover states */
+    --accent-light: #E8F5E8;         /* Light accent backgrounds */
+    
+    --border-color: #E0E0E0;         /* Borders and dividers */
+    --shadow-color: rgba(0, 0, 0, 0.1); /* Box shadows */
+    
+    /* Status colors */
+    --success-color: #4CAF50;
+    --error-color: #F44336;
+    --warning-color: #FF9800;
+    --info-color: #2196F3;
+}
+
+/* Dark theme color overrides */
+body.theme-dark {
+    --bg-primary: #353839;           /* Dark main background */
+    --bg-secondary: #2C2E2F;         /* Dark cards, forms */
+    --bg-tertiary: #404344;          /* Dark subtle backgrounds */
+    
+    --text-primary: #FFFFFF;         /* Light text on dark */
+    --text-secondary: #CCCCCC;       /* Secondary light text */
+    --text-muted: #999999;           /* Muted text stays same */
+    
+    --accent-primary: #4F7942;       /* Dark theme accent */
+    --accent-hover: #5D8A4E;         /* Dark theme hover */
+    --accent-light: #3A5A32;         /* Dark accent backgrounds */
+    
+    --border-color: #555555;         /* Darker borders */
+    --shadow-color: rgba(0, 0, 0, 0.3); /* Stronger shadows */
+}
+
+/* =============================================================================
+   GLOBAL STYLES - Base styling and resets
+   ============================================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    width: 400px;
+    min-height: 500px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.popup-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px var(--shadow-color);
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+
+/* =============================================================================
+   TOP BAR LAYOUT - Flexbox layout for title, tabs, and auth buttons
+   ============================================================================= */
+
+/*
+   TOP BAR FLEXBOX EXPLANATION:
+   The top-bar uses flexbox with three main sections:
+   
+   1. app-title (left): Fixed width, contains "TaskEx" title
+   2. tab-navigation (center): Flexible width (flex: 1), contains tab buttons
+   3. auth-section (right): Fixed width, contains login/logout buttons
+   
+   This creates a responsive layout where the tabs take up remaining space
+   between the fixed-width title and auth sections.
+*/
+
+.top-bar {
+    display: flex;                   /* Enable flexbox layout */
+    align-items: center;             /* Vertically center all items */
+    justify-content: space-between;  /* Distribute space between sections */
+    padding: 10px 12px;              /* Reduced padding for more space */
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+/* Left section: App title */
+.app-title {
+    flex: 0 0 auto;                  /* Don't grow or shrink, auto width */
+    margin-right: 12px;              /* Reduced margin */
+}
+
+.app-title h1 {
+    font-size: 16px;                 /* Slightly smaller title */
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Center section: Tab navigation */
+.tab-navigation {
+    flex: 1;                         /* Take up remaining space */
+    display: flex;
+    justify-content: center;         /* Center the tab buttons */
+    gap: 2px;                        /* Reduced space between tab buttons */
+    overflow: hidden;                /* Prevent overflow */
+}
+
+.tab-button {
+    padding: 8px 12px;               /* Reduced horizontal padding */
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;                 /* Slightly smaller font */
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    position: relative;
+    white-space: nowrap;             /* Prevent text wrapping */
+    min-width: fit-content;          /* Allow natural width */
+}
+
+.tab-button:hover {
+    background-color: var(--accent-light);
+    color: var(--text-primary);
+}
+
+.tab-button.active {
+    background-color: var(--accent-primary);
+    color: white;
+    font-weight: 600;
+}
+
+/* Right section: Authentication */
+.auth-section {
+    flex: 0 0 auto;                  /* Don't grow or shrink, auto width */
+    margin-left: 12px;               /* Reduced margin */
+}
+
+.auth-btn {
+    padding: 6px 10px;               /* Slightly reduced padding */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;                 /* Smaller font for auth buttons */
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;             /* Prevent text wrapping */
+}
+
+.login-btn {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+.login-btn:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.logout-btn {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.logout-btn:hover {
+    background-color: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+}
+
+.auth-loading {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* =============================================================================
+   TAB CONTENT - Main content areas for each tab
+   ============================================================================= */
+
+.tab-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+
+.tab-content:not(.active) {
+    display: none;
+}
+
+/* =============================================================================
+   SETTINGS TAB STYLES - Theme toggles and settings groups
+   ============================================================================= */
+
+.settings-header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.settings-header h3 {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.setting-group {
+    margin-bottom: 32px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.setting-group h4 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.setting-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.setting-help {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    margin-top: 8px;
+    line-height: 1.3;
+    font-style: italic;
+}
+
+/* 
+   TOGGLE GROUP STYLING EXPLANATION:
+   Toggle groups use flexbox to create side-by-side buttons
+   - Only one option can be active at a time
+   - Active state uses accent colors from current theme
+   - Smooth transitions for theme switching
+   - Clear visual feedback for active/inactive states
+*/
+
+.toggle-group {
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.toggle-option {
+    flex: 1;                         /* Equal width for all options */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+}
+
+.toggle-option:hover {
+    background-color: var(--accent-light);
+    color: var(--text-primary);
+}
+
+.toggle-option.active {
+    background-color: var(--accent-primary);
+    color: white;
+    font-weight: 600;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.toggle-icon {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* =============================================================================
+   TASK MANAGEMENT ROW - Top row with quick add, search, and filters
+   ============================================================================= */
+
+/*
+   TASK MANAGEMENT ROW CSS EXPLANATION:
+   Uses flexbox to create a responsive horizontal layout:
+   - quick-add-input: flex: 1 (takes remaining space)
+   - icon buttons: fixed width with consistent sizing
+   - search and filter: fixed widths for consistent layout
+   - gap: 8px provides even spacing between all elements
+   - align-items: center vertically aligns all elements
+*/
+
+.task-management-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.quick-add-input {
+    flex: 1;                         /* Takes most of the available space */
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.quick-add-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+/* New add task button styling */
+.add-task-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;                         /* Takes equal space with filter dropdown */
+    min-width: 120px;
+}
+
+.add-task-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.add-task-btn:active {
+    transform: translateY(0);
+}
+
+.add-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.add-text {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Task refresh row */
+.task-refresh-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+    padding-left: 12px;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-color);
+}
+
+/* Legacy add-btn for compatibility */
+.add-btn {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.add-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.btn-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.search-input {
+    flex: 2;                         /* Takes more space than other elements */
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.filter-dropdown {
+    flex: 1;                         /* Takes equal space with add button */
+    min-width: 140px;
+    padding: 12px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-dropdown:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* =============================================================================
+   EXPANDABLE TASK FORM - Google Tasks style detailed form
+   ============================================================================= */
+
+.expanded-form {
+    margin-bottom: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transition: all 0.3s ease;
+    animation: expandForm 0.3s ease-out;
+}
+
+@keyframes expandForm {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+}
+
+.google-tasks-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-input {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.title-input {
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.details-input {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+.url-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.url-input {
+    flex: 1;
+}
+
+.url-btn {
+    padding: 8px 12px;
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.url-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.due-date-options {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.due-btn {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.due-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.due-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.date-picker {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.date-picker:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.cancel-btn {
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+}
+
+.save-btn {
+    padding: 10px 16px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* =============================================================================
+   GOOGLE TASKS LIST - Task items with checkboxes, edit, and delete
+   ============================================================================= */
+
+.google-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.task-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transform: translateY(-1px);
+}
+
+.task-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+}
+
+.task-checkbox:hover {
+    border-color: var(--accent-primary);
+    background: var(--accent-light);
+}
+
+.task-checkbox.completed {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.task-checkbox.completed::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Task star button */
+.task-star {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.task-star:hover {
+    background: var(--accent-light);
+    transform: scale(1.1);
+}
+
+/* Starred task styling */
+.task-item.starred {
+    background: linear-gradient(135deg, var(--accent-light), var(--bg-secondary));
+    border-left: 3px solid var(--accent-primary);
+}
+
+.task-item.starred:hover {
+    background: linear-gradient(135deg, var(--accent-light), var(--bg-tertiary));
+}
+
+.task-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+/*
+   STRIKETHROUGH CSS EXPLANATION:
+   When a task is completed, we apply strikethrough styling:
+   - text-decoration: line-through creates the strikethrough line
+   - opacity: 0.6 makes the text appear faded/muted
+   - color: var(--text-muted) changes color to indicate completion
+   - The transition: all 0.3s ease provides smooth animation
+   
+   This visual feedback clearly shows completed vs active tasks
+*/
+.task-title.completed {
+    text-decoration: line-through;   /* Creates the strikethrough line */
+    opacity: 0.6;                    /* Fades the text */
+    color: var(--text-muted);        /* Muted color for completed tasks */
+}
+
+.task-details {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+.task-details.completed {
+    text-decoration: line-through;   /* Also strike through details */
+    opacity: 0.6;
+    color: var(--text-muted);
+}
+
+.task-url {
+    font-size: 12px;
+    color: var(--accent-primary);
+    text-decoration: none;
+    margin-top: 4px;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.task-url:hover {
+    text-decoration: underline;
+    color: var(--accent-hover);
+}
+
+.task-due-date {
+    font-size: 12px;
+    color: var(--warning-color);
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.task-actions {
+    display: flex;
+    flex-direction: column;              /* Vertical layout for buttons */
+    gap: 4px;
+    opacity: 0;                      /* Hidden by default */
+    transition: opacity 0.3s ease;
+}
+
+.task-item:hover .task-actions {
+    opacity: 1;                      /* Show on hover */
+}
+
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.edit-btn {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.edit-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.delete-btn {
+    background: #ffebee;
+    color: var(--error-color);
+}
+
+.delete-btn:hover {
+    background: var(--error-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Task editing state */
+.task-item.editing {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+}
+
+.task-item.editing .task-content {
+    gap: 8px;
+}
+
+.task-edit-input {
+    padding: 8px;
+    border: 1px solid var(--accent-primary);
+    border-radius: 4px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.task-edit-textarea {
+    padding: 8px;
+    border: 1px solid var(--accent-primary);
+    border-radius: 4px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+.task-edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.save-edit-btn {
+    padding: 6px 12px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.save-edit-btn:hover {
+    background: var(--accent-hover);
+}
+
+.cancel-edit-btn {
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.cancel-edit-btn:hover {
+    background: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+}
+
+/* =============================================================================
+   CALENDAR VIEWS - Calendar interface with day, week, month, year views
+   ============================================================================= */
+
+/* Calendar controls section */
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.view-selector-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.view-selector {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+}
+
+.view-selector:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.nav-icon {
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.current-date {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 120px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.add-event-btn {
+    padding: 8px 16px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-event-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* Calendar view container */
+.calendar-view-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+}
+
+.calendar-view {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+
+.calendar-view.active {
+    display: block;
+}
+
+/* =============================================================================
+   DAY VIEW - Vertical time slots with positioned events
+   ============================================================================= */
+
+/*
+   DAY VIEW CSS EXPLANATION:
+   The day view mimics Google Calendar's interface:
+   - Two columns: time labels (left) and events area (right)
+   - Time slots: 24 hours displayed vertically with 60px height each
+   - Events: Positioned absolutely within the events column
+   - Event positioning: CSS top calculated from start time (hour * 60px)
+   - Event height: Calculated from duration (minutes * 1px per minute)
+   
+   This creates a visual timeline where events appear at their scheduled times
+*/
+
+.day-view-container {
+    display: flex;
+    height: 1440px; /* 24 hours * 60px per hour */
+    position: relative;
+}
+
+.time-column {
+    width: 80px;
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.time-slot {
+    height: 60px; /* Each hour = 60px */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.time-slot:last-child {
+    border-bottom: none;
+}
+
+.events-column {
+    flex: 1;
+    position: relative;
+    background: var(--bg-secondary);
+}
+
+/* Hour grid lines in events column */
+.events-column::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 59px,
+        var(--border-color) 59px,
+        var(--border-color) 60px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Calendar event styling in day view */
+.calendar-event {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 2;
+    box-shadow: 0 1px 3px var(--shadow-color);
+    overflow: hidden;
+}
+
+.calendar-event:hover {
+    background: var(--accent-hover);
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    z-index: 3;
+}
+
+.event-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-time {
+    font-size: 11px;
+    opacity: 0.9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-description {
+    font-size: 10px;
+    opacity: 0.8;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Different event colors for variety */
+.calendar-event.event-color-1 { background: #4285f4; }
+.calendar-event.event-color-2 { background: #34a853; }
+.calendar-event.event-color-3 { background: #fbbc04; color: #333; }
+.calendar-event.event-color-4 { background: #ea4335; }
+.calendar-event.event-color-5 { background: #9c27b0; }
+.calendar-event.event-color-6 { background: #ff9800; }
+
+/* =============================================================================
+   OTHER CALENDAR VIEWS - Placeholders for future implementation
+   ============================================================================= */
+
+.week-view-placeholder,
+.month-view-placeholder,
+.year-view-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.week-view-placeholder h3,
+.month-view-placeholder h3,
+.year-view-placeholder h3 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+/* =============================================================================
+   CALENDAR ACTIONS - Action buttons below calendar
+   ============================================================================= */
+
+.calendar-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* =============================================================================
+   EVENT FORM - Form for creating calendar events
+   ============================================================================= */
+
+.event-form-container {
+    margin-bottom: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transition: all 0.3s ease;
+    animation: expandForm 0.3s ease-out;
+}
+
+.google-calendar-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.google-calendar-form h3 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.datetime-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.datetime-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.datetime-row .form-label {
+    min-width: 50px;
+    margin-bottom: 0;
+}
+
+.datetime-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.datetime-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* =============================================================================
+   RESPONSIVE CALENDAR - Adjustments for smaller screens
+   ============================================================================= */
+
+@media (max-width: 400px) {
+    .calendar-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .date-navigation {
+        order: -1;
+    }
+    
+    .time-column {
+        width: 60px;
+    }
+    
+    .time-slot {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    
+    .calendar-event {
+        left: 4px;
+        right: 4px;
+        padding: 2px 6px;
+        font-size: 11px;
+    }
+}
+
+/* =============================================================================
+   FULLCALENDAR INTEGRATION - Theme-aware calendar styling
+   ============================================================================= */
+
+/* Calendar status bar */
+.calendar-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+}
+
+.calendar-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#calendar-status-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+#calendar-status-text.status-success {
+    color: var(--success-color);
+}
+
+#calendar-status-text.status-error {
+    color: var(--error-color);
+}
+
+#calendar-status-text.status-warning {
+    color: #ff9800;
+}
+
+#calendar-status-text.status-info {
+    color: var(--info-color);
+}
+
+.calendar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* FullCalendar wrapper */
+.fullcalendar-wrapper {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    min-height: 400px;
+    transition: all 0.3s ease;
+}
+
+/* 
+   FULLCALENDAR THEME INTEGRATION EXPLANATION:
+   These styles override FullCalendar's default colors to match our extension theme:
+   - Background colors use our CSS variables (--bg-primary, --bg-secondary)
+   - Text colors use our theme text colors (--text-primary, --text-secondary)
+   - Buttons use our accent colors (--accent-primary, --accent-hover)
+   - Borders use our theme border color (--border-color)
+   
+   This ensures the calendar looks integrated with the rest of the extension
+*/
+
+/* FullCalendar base styling */
+.fc {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+}
+
+/* FullCalendar toolbar (header with navigation and view buttons) */
+.fc .fc-toolbar {
+    background: var(--bg-tertiary);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.fc .fc-toolbar-title {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* FullCalendar buttons - styled to match extension theme */
+.fc .fc-button-primary {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.fc .fc-button-primary:focus {
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.fc .fc-button-primary.fc-button-active {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.fc .fc-button-primary:disabled {
+    background-color: var(--text-muted);
+    border-color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* FullCalendar table styling */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: var(--border-color);
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border-color: var(--border-color);
+}
+
+/* Calendar header (day names) */
+.fc .fc-col-header-cell {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 8px 4px;
+}
+
+.fc .fc-col-header-cell-cushion {
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+/* Calendar day cells */
+.fc .fc-daygrid-day {
+    background-color: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+
+.fc .fc-daygrid-day:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: var(--accent-light);
+    border-color: var(--accent-primary);
+}
+
+.fc .fc-daygrid-day-number {
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 4px 6px;
+    text-decoration: none;
+}
+
+.fc .fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: var(--accent-primary);
+    font-weight: 700;
+    background-color: var(--accent-primary);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px;
+}
+
+/* 
+   CALENDAR EVENTS STYLING EXPLANATION:
+   Events are styled to be clearly visible and read-only:
+   - Background colors use theme accent colors
+   - No hover effects that suggest interactivity
+   - Clear text contrast for readability
+   - Rounded corners for modern appearance
+*/
+
+/* Calendar events */
+.fc .fc-event {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: default; /* Read-only - no pointer cursor */
+    transition: none; /* No hover effects for read-only */
+}
+
+.fc .fc-event:hover {
+    background-color: var(--accent-primary); /* No color change on hover */
+    border-color: var(--accent-primary);
+}
+
+.fc .fc-event .fc-event-main {
+    color: white;
+    padding: 2px 4px;
+}
+
+.fc .fc-event .fc-event-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fc .fc-event .fc-event-time {
+    font-weight: 600;
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* Different event colors for variety */
+.fc .fc-event.event-color-1 { background-color: #4285f4; border-color: #4285f4; }
+.fc .fc-event.event-color-2 { background-color: #34a853; border-color: #34a853; }
+.fc .fc-event.event-color-3 { background-color: #fbbc04; border-color: #fbbc04; color: #333; }
+.fc .fc-event.event-color-4 { background-color: #ea4335; border-color: #ea4335; }
+.fc .fc-event.event-color-5 { background-color: #9c27b0; border-color: #9c27b0; }
+.fc .fc-event.event-color-6 { background-color: #ff9800; border-color: #ff9800; }
+
+/* Remove interactive elements for read-only mode */
+.fc .fc-event-resizer {
+    display: none !important; /* Hide resize handles */
+}
+
+.fc .fc-event-draggable {
+    cursor: default !important; /* Remove drag cursor */
+}
+
+/* More link styling */
+.fc .fc-more-link {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 3px;
+    font-size: 11px;
+    padding: 2px 4px;
+    text-decoration: none;
+}
+
+.fc .fc-more-link:hover {
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+/* Calendar error display */
+.calendar-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 300px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.calendar-error .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.calendar-error .error-message {
+    color: var(--error-color);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+.calendar-error .retry-btn {
+    padding: 10px 20px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.calendar-error .retry-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* Calendar legend */
+.calendar-legend {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.legend-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.legend-text {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Dark theme specific overrides */
+body.theme-dark .fc .fc-event.event-color-3 {
+    color: #333; /* Keep dark text on yellow events in dark theme */
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    .calendar-status {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+    
+    .fullcalendar-wrapper {
+        padding: 8px;
+    }
+    
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .fc .fc-toolbar-chunk {
+        justify-content: center;
+    }
+    
+    .fc .fc-button-group {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .fc .fc-button {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+}
+
+/* =============================================================================
+   FORM STYLES - Input fields, buttons, and form layouts
+   ============================================================================= */
+
+.task-form, .event-form {
+    background: var(--bg-tertiary);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.task-form h3, .event-form h3 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 16px;
+}
+
+input[type="text"], 
+input[type="datetime-local"], 
+input[type="number"], 
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Button styles */
+.primary-btn {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.primary-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.secondary-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin: 4px;
+}
+
+.secondary-btn:hover {
+    background: var(--accent-light);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+/* =============================================================================
+   LIST STYLES - Tasks and events display
+   ============================================================================= */
+
+.items-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.task-item, .event-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.task-item:hover, .event-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transform: translateY(-1px);
+}
+
+.task-title, .event-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.task-notes, .event-date {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.task-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.delete-btn {
+    background: var(--error-color);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.05);
+}
+
+.star-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.star-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+/* Current page info section removed for cleaner UI */
+
+/* =============================================================================
+   STATUS MESSAGES - Success, error, and info notifications
+   ============================================================================= */
+
+.status-messages {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 350px;
+}
+
+.status-message {
+    padding: 10px 16px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    animation: slideInDown 0.3s ease;
+}
+
+.status-message.success {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-message.error {
+    background: var(--error-color);
+    color: white;
+}
+
+.status-message.info {
+    background: var(--info-color);
+    color: white;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =============================================================================
+   UTILITY CLASSES - Helper classes for common styling needs
+   ============================================================================= */
+
+.no-items {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 40px 20px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+.loading-message {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 20px;
+}
+
+.login-prompt {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 30px 20px;
+    background: var(--accent-light);
+    border-radius: 8px;
+    border: 1px solid var(--accent-primary);
+}
+
+.error-message {
+    text-align: center;
+    color: var(--error-color);
+    font-style: italic;
+    padding: 20px;
+    background: #ffebee;
+    border-radius: 8px;
+    border: 1px solid var(--error-color);
+}
+
+/* =============================================================================
+   FOOTER - Version info and branding
+   ============================================================================= */
+
+.footer {
+    background: var(--bg-tertiary);
+    padding: 12px 20px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+    transition: all 0.3s ease;
+}
+
+.version-info {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.help-text {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+/* =============================================================================
+   RESPONSIVE DESIGN - Scrollbars and mobile adjustments
+   ============================================================================= */
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* =============================================================================
+   THEME TRANSITION ANIMATIONS - Smooth theme switching
+   ============================================================================= */
+
+/*
+   THEME TRANSITION EXPLANATION:
+   All theme-sensitive elements have transition: all 0.3s ease
+   This creates smooth color transitions when switching themes
+   The transitions apply to:
+   - Background colors
+   - Text colors  
+   - Border colors
+   - Shadow colors
+   
+   This provides a polished user experience when toggling themes
+*/
+
+* {
+    transition-property: background-color, color, border-color, box-shadow;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+}
+
+/* Disable transitions during initial load to prevent flash */
+.preload * {
+    transition: none !important;
+}
+
+/* =============================================================================
+   DIRECT CALENDAR API INTEGRATION - Simple event list styling
+   ============================================================================= */
+
+/* Event form styling */
+.event-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    animation: expandForm 0.3s ease-out;
+}
+
+.event-form h4 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.datetime-group {
+    display: flex;
+    gap: 8px;
+}
+
+.datetime-group .form-input {
+    flex: 1;
+}
+
+/* Events section */
+.events-section {
+    margin-top: 16px;
+}
+
+.events-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Events list */
+.events-list {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Date headers for grouping events */
+.events-date-header {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* Events date group container */
+.events-date-group {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.events-date-group:last-child {
+    border-bottom: none;
+}
+
+/* Individual event items */
+.event-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.event-item:last-child {
+    border-bottom: none;
+}
+
+.event-item:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Event content */
+.event-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.event-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.event-time {
+    color: var(--accent-primary);
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.event-time::before {
+    content: "🕐";
+    font-size: 11px;
+}
+
+.event-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+
+.event-location {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.event-url {
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 2px 6px;
+    background: var(--accent-light);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.event-url:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Event actions */
+.event-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.event-item:hover .event-actions {
+    opacity: 1;
+}
+
+.event-actions .action-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+}
+
+.event-actions .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.event-actions .edit-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.event-actions .delete-btn:hover {
+    background: #ffebee;
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+/* Task-event styling */
+.task-event {
+    border-left: 3px solid var(--accent-primary);
+    background: linear-gradient(135deg, var(--accent-light), var(--bg-secondary));
+}
+
+.task-event .event-title {
+    font-weight: 600;
+}
+
+.task-event .complete-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.task-event .complete-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+/* No events message */
+.no-events-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.no-events-message p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+}
+
+.no-events-message p:last-child {
+    margin-bottom: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Loading and error states */
+.loading-message,
+.error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.loading-message {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.error-message {
+    color: var(--error-color);
+}
+
+.error-message .error-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.error-message .error-text {
+    font-size: 14px;
+    margin-bottom: 16px;
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+.error-message .retry-btn {
+    padding: 8px 16px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.error-message .retry-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* =============================================================================
+   CALENDAR VIEW CONTROLS - Day/Week/Month toggle buttons
+   ============================================================================= */
+
+/* Calendar controls container */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* View toggle buttons */
+.view-toggle-group {
+    display: flex;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.view-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-right: 1px solid var(--border-color);
+}
+
+.view-toggle-btn:last-child {
+    border-right: none;
+}
+
+.view-toggle-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.view-toggle-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.view-toggle-btn.active:hover {
+    background: var(--accent-hover);
+}
+
+/* Content type toggle buttons */
+.content-toggle-group {
+    display: flex;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.content-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.content-toggle-btn:last-child {
+    border-right: none;
+}
+
+.content-toggle-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.content-toggle-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.content-toggle-btn.active:hover {
+    background: var(--accent-hover);
+}
+
+/* Responsive adjustments for view controls */
+@media (max-width: 400px) {
+    .calendar-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .view-toggle-group {
+        width: 100%;
+    }
+    
+    .view-toggle-btn {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+/* =============================================================================
+   TASK-CALENDAR INTEGRATION - Checkbox styling for task sync
+   ============================================================================= */
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.form-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.checkbox-label {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+.form-help {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}

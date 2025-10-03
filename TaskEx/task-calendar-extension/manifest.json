@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "TaskEx",
+  "version": "1.0.0",
+  "action": { 
+    "default_title": "TaskEx"
+  },
+  "permissions": ["identity", "storage", "tabs", "sidePanel", "contextMenus", "notifications"],
+  "oauth2": {
+    "client_id": "994610319815-ditlfkceb19313g35vvqppl8qr7sbuah.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/tasks"
+    ]
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "Icon/Icon16.png",
+    "32": "Icon/Icon32.png",
+    "128": "Icon/Icon128.png"
+  }
+}

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Standard HTML document setup -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskEx - Google Tasks & Calendar</title>
+    
+    <!-- Link to our CSS file for styling the popup -->
+    <link rel="stylesheet" href="popup.css">
+    
+    <!-- FullCalendar removed - using direct Google Calendar API integration -->
+</head>
+<body class="theme-light">
+    <!-- Main container that holds everything in the popup -->
+    <div class="popup-container">
+        
+        <!-- 
+            TOP BAR LAYOUT EXPLANATION:
+            Uses CSS Flexbox to create a horizontal layout with three sections:
+            1. Left: TaskEx title (flex-grow: 0 - fixed width)
+            2. Center: Tab navigation (flex-grow: 1 - takes remaining space)
+            3. Right: Auth buttons (flex-grow: 0 - fixed width)
+            
+            The flexbox layout automatically handles spacing and alignment
+        -->
+        <div class="top-bar">
+            <!-- Left section: Extension title -->
+            <div class="app-title">
+                <h1>TaskEx</h1>
+            </div>
+            
+            <!-- Center section: Tab navigation buttons -->
+            <div class="tab-navigation">
+                <!-- To-Do tab button - starts as active (selected) -->
+                <button class="tab-button active" id="todo-tab-btn" data-tab="todo">To-Do</button>
+                <!-- Calendar tab button -->
+                <button class="tab-button" id="calendar-tab-btn" data-tab="calendar">Calendar</button>
+                <!-- Settings tab button -->
+                <button class="tab-button" id="settings-tab-btn" data-tab="settings">Settings</button>
+            </div>
+            
+            <!-- 
+                Right section: Authentication status and buttons
+                LOGIN/LOGOUT STATE DISPLAY:
+                - Shows "Login with Google" button when user is not authenticated
+                - Shows "Logout" button when user is authenticated
+                - JavaScript toggles visibility based on auth state
+                - Uses display: none/block to show/hide appropriate button
+            -->
+            <div class="auth-section">
+                <!-- Login button - only shows when user is not authenticated -->
+                <button id="login-btn" class="auth-btn login-btn" style="display: none;">
+                    Login with Google
+                </button>
+                <!-- Logout button - only shows when user is authenticated -->
+                <button id="logout-btn" class="auth-btn logout-btn" style="display: none;">
+                    Logout
+                </button>
+                <!-- Loading state - shows while checking authentication -->
+                <span id="auth-loading" class="auth-loading">Checking...</span>
+            </div>
+        </div>
+        
+        <!-- TO-DO TAB CONTENT - Everything related to Google Tasks -->
+        <div class="tab-content" id="todo-content">
+            
+            <!-- 
+                TASK MANAGEMENT ROW EXPLANATION:
+                This row uses CSS Flexbox to create a horizontal layout with:
+                1. Quick add input (flex-grow: 1) - takes most space
+                2. Add button (fixed width) - opens expandable form
+                3. Search box (fixed width) - filters tasks
+                4. Filter dropdown (fixed width) - filters by tags
+                
+                The layout is responsive and maintains proper spacing
+            -->
+            <div class="task-management-row">
+                <!-- Add button to expand full form -->
+                <button id="expand-form-btn" class="add-task-btn" title="Add detailed task">
+                    <span class="add-icon">➕</span>
+                    <span class="add-text">Add Task</span>
+                </button>
+                
+                <!-- Search box to filter tasks -->
+                <input type="text" 
+                       id="task-search" 
+                       class="search-input"
+                       placeholder="🔍 Search tasks..." 
+                       maxlength="50">
+                
+                <!-- Filter and sort dropdown -->
+                <select id="task-filter" class="filter-dropdown">
+                    <option value="all">All Tasks</option>
+                    <optgroup label="Sort by">
+                        <option value="sort-due-asc">📅 Due Date (earliest first)</option>
+                        <option value="sort-created-desc">🆕 Creation Date (newest first)</option>
+                        <option value="sort-title-asc">🔤 Title (A-Z)</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <!-- Refresh button row -->
+            <div class="task-refresh-row">
+                <button id="refresh-tasks-manual-btn" class="refresh-btn">
+                    🔄 Refresh Tasks
+                </button>
+            </div>
+            
+            <!-- Refresh button removed to avoid duplication -->
+            
+            <!-- 
+                EXPANDABLE TASK FORM - Google Tasks Style
+                This form is hidden by default and expands when + button is clicked
+                Styled to match Google Tasks interface with clean inputs and actions
+            -->
+            <div id="expanded-task-form" class="expanded-form" style="display: none;">
+                <form id="detailed-task-form" class="google-tasks-form">
+                    
+                    <!-- Task title input - maps to Google Tasks 'title' field -->
+                    <div class="form-group">
+                        <input type="text" 
+                               id="task-title-detailed" 
+                               class="form-input title-input"
+                               placeholder="Task title" 
+                               maxlength="100" 
+                               required>
+                    </div>
+                    
+                    <!-- Task details textarea - maps to Google Tasks 'notes' field -->
+                    <div class="form-group">
+                        <textarea id="task-details" 
+                                  class="form-input details-input"
+                                  placeholder="Add details..." 
+                                  rows="3" 
+                                  maxlength="8192"></textarea>
+                    </div>
+                    
+                    <!-- URL field with current page button - added to Google Tasks 'notes' field -->
+                    <div class="form-group url-group">
+                        <input type="url" 
+                               id="task-url" 
+                               class="form-input url-input"
+                               placeholder="Add URL..." 
+                               maxlength="2048">
+                        <button type="button" id="use-current-url-btn" class="url-btn">
+                            Use current page URL
+                        </button>
+                    </div>
+                    
+                    <!-- Due date options - maps to Google Tasks 'due' field -->
+                    <div class="form-group due-date-group">
+                        <label class="form-label">Due date:</label>
+                        <div class="due-date-options">
+                            <button type="button" class="due-btn" data-due="today">Today</button>
+                            <button type="button" class="due-btn" data-due="tomorrow">Tomorrow</button>
+                            <input type="date" id="custom-due-date" class="date-picker">
+                        </div>
+                    </div>
+                    
+                    <!-- Calendar sync removed - tasks with due dates automatically sync -->
+                    
+                    <!-- Form actions -->
+                    <div class="form-actions">
+                        <button type="button" id="cancel-task-btn" class="cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" id="save-task-btn" class="save-btn">
+                            Save task
+                        </button>
+                    </div>
+                    
+                </form>
+            </div>
+            
+            <!-- Current page info removed for cleaner UI -->
+            
+            <!-- 
+                TASKS LIST SECTION - Google Tasks Style
+                Tasks are rendered as interactive list items with:
+                - Checkbox for completion (maps to Google Tasks 'status' field)
+                - Task title and details display
+                - Edit and Delete action buttons
+                - Strikethrough styling for completed tasks
+            -->
+            <div class="tasks-section">
+                <h3>Your Google Tasks</h3>
+                
+                <!-- Tasks list container -->
+                <div id="tasks-list" class="google-tasks-list">
+                    <!-- Tasks will be dynamically rendered here by JavaScript -->
+                    <div class="loading-message">Loading tasks...</div>
+                </div>
+                
+                <!-- Refresh button to reload tasks from Google -->
+                <button id="refresh-tasks-btn" class="secondary-btn">
+                    🔄 Refresh Tasks
+                </button>
+            </div>
+            
+        </div>
+        
+        <!-- CALENDAR TAB CONTENT - Direct Google Calendar API integration -->
+        <div class="tab-content" id="calendar-content" style="display: none;">
+            
+            <!-- 
+                CALENDAR API INTEGRATION EXPLANATION:
+                This section uses direct Google Calendar API calls to manage events:
+                - Events are fetched from Google Calendar API and displayed in a simple list
+                - Users can create, edit, and delete events directly from the extension
+                - All changes sync immediately with Google Calendar
+                - No external libraries needed - pure API integration
+            -->
+            
+            <!-- Calendar view controls -->
+            <div class="calendar-controls">
+                <!-- View toggle buttons -->
+                <div class="view-toggle-group">
+                    <button id="day-view-btn" class="view-toggle-btn active" data-view="day">
+                        Day
+                    </button>
+                    <button id="week-view-btn" class="view-toggle-btn" data-view="week">
+                        Week
+                    </button>
+                    <button id="month-view-btn" class="view-toggle-btn" data-view="month">
+                        Month
+                    </button>
+                </div>
+                
+                <!-- Content type toggle -->
+                <div class="content-toggle-group">
+                    <button id="events-only-btn" class="content-toggle-btn active" data-content="events">
+                        📅 Events Only
+                    </button>
+                    <button id="tasks-events-btn" class="content-toggle-btn" data-content="both">
+                        📋 Tasks & Events
+                    </button>
+                </div>
+                
+                <!-- Calendar action buttons -->
+                <div class="calendar-actions">
+                    <button id="add-event-btn" class="primary-btn">
+                        ➕ Add Event
+                    </button>
+                    <button id="refresh-events-btn" class="secondary-btn">
+                        🔄 Refresh
+                    </button>
+                    <button id="open-calendar-btn" class="secondary-btn">
+                        🗓️ Open Google Calendar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 
+                ADD/EDIT EVENT FORM
+                This form is hidden by default and shows when adding or editing events
+                Fields map directly to Google Calendar API event properties
+            -->
+            <div id="event-form" class="event-form" style="display: none;">
+                <h4 id="event-form-title">Add New Event</h4>
+                <form id="calendar-event-form">
+                    
+                    <!-- Event title - maps to 'summary' in Google Calendar API -->
+                    <div class="form-group">
+                        <label for="event-title">Event Title *</label>
+                        <input type="text" 
+                               id="event-title" 
+                               class="form-input"
+                               placeholder="Enter event title" 
+                               maxlength="100" 
+                               required>
+                    </div>
+                    
+                    <!-- Event description - maps to 'description' in Google Calendar API -->
+                    <div class="form-group">
+                        <label for="event-description">Description</label>
+                        <textarea id="event-description" 
+                                  class="form-input"
+                                  placeholder="Add event description..." 
+                                  rows="3" 
+                                  maxlength="8192"></textarea>
+                    </div>
+                    
+                    <!-- Start date and time -->
+                    <div class="form-group">
+                        <label for="event-start-date">Start Date * & Time (optional)</label>
+                        <div class="datetime-group">
+                            <input type="date" id="event-start-date" class="form-input" required>
+                            <input type="time" id="event-start-time" class="form-input" placeholder="All day if empty">
+                        </div>
+                    </div>
+                    
+                    <!-- End date and time (optional) -->
+                    <div class="form-group">
+                        <label for="event-end-date">End Date & Time (optional - defaults to 1 hour later)</label>
+                        <div class="datetime-group">
+                            <input type="date" id="event-end-date" class="form-input">
+                            <input type="time" id="event-end-time" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <!-- Event URL - added to description -->
+                    <div class="form-group">
+                        <label for="event-url">URL (optional)</label>
+                        <input type="url" 
+                               id="event-url" 
+                               class="form-input"
+                               placeholder="https://example.com" 
+                               maxlength="2048">
+                    </div>
+                    
+                    <!-- Form actions -->
+                    <div class="form-actions">
+                        <button type="button" id="cancel-event-btn" class="cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" id="save-event-btn" class="save-btn">
+                            Save Event
+                        </button>
+                    </div>
+                    
+                </form>
+            </div>
+            
+            <!-- 
+                EVENTS LIST SECTION
+                Events are displayed in chronological order, grouped by date
+                Each event shows title, time, description, and action buttons
+            -->
+            <div class="events-section">
+                <h3>Your Google Calendar Events</h3>
+                
+                <!-- Events list container -->
+                <div id="events-list" class="events-list">
+                    <!-- Events will be dynamically rendered here by JavaScript -->
+                    <div class="loading-message">Loading events...</div>
+                </div>
+                
+                <!-- Status message for empty calendar -->
+                <div id="no-events-message" class="no-events-message" style="display: none;">
+                    <p>📅 No upcoming events found</p>
+                    <p>Click "Add Event" to create your first event!</p>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- SETTINGS TAB CONTENT - Theme and time format preferences -->
+        <div class="tab-content" id="settings-content" style="display: none;">
+            
+            <!-- Settings header -->
+            <div class="settings-header">
+                <h3>Display Settings</h3>
+            </div>
+            
+            <!-- Interface mode toggle section -->
+            <div class="setting-group">
+                <h4>Interface Mode</h4>
+                <p class="setting-description">Choose how TaskEx appears when opened</p>
+                
+                <!-- 
+                    INTERFACE MODE TOGGLE EXPLANATION:
+                    Two-button toggle for interface display mode
+                    - Popup: Traditional popup overlay on top of webpage
+                    - Side Panel: Fixed window on right side of webpage (1/6 width)
+                    - JavaScript handles the mode switching and window management
+                -->
+                <div class="toggle-group" id="interface-toggle">
+                    <button class="toggle-option active" data-mode="popup">
+                        <span class="toggle-icon">📱</span>
+                        <span class="toggle-label">Popup</span>
+                    </button>
+                    <button class="toggle-option" data-mode="sidepanel">
+                        <span class="toggle-icon">📋</span>
+                        <span class="toggle-label">Side Panel</span>
+                    </button>
+                </div>
+                <small class="setting-help">Popup: Opens on top of webpage. Side Panel: Fixed window on right side.</small>
+            </div>
+            
+            <!-- Theme toggle section -->
+            <div class="setting-group">
+                <h4>Theme</h4>
+                <p class="setting-description">Choose your preferred color theme</p>
+                
+                <!-- 
+                    THEME TOGGLE EXPLANATION:
+                    Two-button toggle where only one can be active at a time
+                    - Light theme: background #F2F0EF, buttons/toggles #2C5F34
+                    - Dark theme: background #353839, buttons/toggles #4F7942
+                    - JavaScript adds/removes 'active' class to show selection
+                    - Theme is applied by changing body class from 'theme-light' to 'theme-dark'
+                -->
+                <div class="toggle-group" id="theme-toggle">
+                    <button class="toggle-option active" data-theme="light">
+                        <span class="toggle-icon">☀️</span>
+                        <span class="toggle-label">Light</span>
+                    </button>
+                    <button class="toggle-option" data-theme="dark">
+                        <span class="toggle-icon">🌙</span>
+                        <span class="toggle-label">Dark</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Time format toggle section -->
+            <div class="setting-group">
+                <h4>Time Format</h4>
+                <p class="setting-description">Choose how times are displayed</p>
+                
+                <!-- 
+                    TIME FORMAT TOGGLE EXPLANATION:
+                    Controls how times are displayed throughout the extension
+                    - 12H: Shows times like "2:30 PM"
+                    - 24H: Shows times like "14:30"
+                    - Setting is stored in chrome.storage.local
+                    - Used when formatting event times and task timestamps
+                -->
+                <div class="toggle-group" id="time-format-toggle">
+                    <button class="toggle-option active" data-format="12h">
+                        <span class="toggle-icon">🕐</span>
+                        <span class="toggle-label">12H</span>
+                    </button>
+                    <button class="toggle-option" data-format="24h">
+                        <span class="toggle-icon">🕓</span>
+                        <span class="toggle-label">24H</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Google Calendar Integration section -->
+            <div class="setting-group">
+                <h4>Google Calendar Integration</h4>
+                <p class="setting-description">Sync your tasks and events with Google Calendar. This will import your Google Calendar events and keep them synchronized.</p>
+                
+                <!-- Connect/Disconnect button based on auth state -->
+                <button id="connect-calendar-btn" class="primary-btn">
+                    🔗 Connect Google Calendar
+                </button>
+            </div>
+            
+        </div>
+        
+        <!-- Status messages area - shows success/error messages to user -->
+        <div id="status-messages" class="status-messages">
+            <!-- Messages will appear here temporarily -->
+        </div>
+        
+        <!-- Footer with version info and helpful links -->
+        <div class="footer">
+            <p class="version-info">TaskEx v1.0.0</p>
+            <small class="help-text">Powered by Google Tasks & Calendar APIs</small>
+        </div>
+        
+    </div>
+    
+    <!-- Load our JavaScript file - this handles all the functionality -->
+    <!-- Placed at the end so HTML loads first for better performance -->
+    <script src="popup.js"></script>
+</body>
+</html>

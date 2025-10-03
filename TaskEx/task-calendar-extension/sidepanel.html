@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Standard HTML document setup -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskEx - Google Tasks & Calendar</title>
+    
+    <!-- Link to our CSS file for styling the side panel -->
+    <link rel="stylesheet" href="sidepanel.css">
+    
+    <!-- FullCalendar removed - using direct Google Calendar API integration -->
+</head>
+<body class="theme-light">
+    <!-- Main container that holds everything in the side panel -->
+    <div class="sidepanel-container">
+        
+        <!-- 
+            TOP BAR LAYOUT EXPLANATION:
+            Uses CSS Flexbox to create a horizontal layout with three sections:
+            1. Left: "TaskEx" title
+            2. Center: Tab navigation buttons (To-Do, Calendar, Settings)
+            3. Right: Login/Logout button
+            
+            The layout is responsive and maintains proper spacing
+        -->
+        <header id="app-header">
+            <div id="brand">TaskEx</div>
+            <nav id="nav-tabs">
+                <!-- To-Do tab button - starts as active (selected) -->
+                <button class="tab-button active" id="todo-tab-btn" data-tab="todo">To-Do</button>
+                <!-- Calendar tab button -->
+                <button class="tab-button" id="calendar-tab-btn" data-tab="calendar">Calendar</button>
+                <!-- LinkHive tab button -->
+                <button class="tab-button" id="savetab-tab-btn" data-tab="savetab">LinkHive</button>
+                <!-- Settings tab button -->
+                <button class="tab-button" id="settings-tab-btn" data-tab="settings">Settings</button>
+            </nav>
+            
+        </header>
+        
+        <!-- 
+            TAB CONTENT AREA:
+            Each tab has its own content div that is shown/hidden based on active tab
+            - todo-content: Task management interface
+            - calendar-content: Calendar events interface  
+            - settings-content: User preferences interface
+        -->
+        
+        <!-- TO-DO TAB CONTENT - Task management interface -->
+        <div class="tab-content active" id="todo-content">
+            
+            <!-- 
+                TASK MANAGEMENT ROW LAYOUT EXPLANATION:
+                This row contains the main task management controls:
+                1. Add Task button (fixed width) - expands to show detailed form
+                2. Search input (flexible width) - filters tasks by title/details
+                3. Filter dropdown (fixed width) - filters by tags
+                
+                The layout is responsive and maintains proper spacing
+            -->
+            <div id="todo-toolbar" class="toolbar">
+                <!-- Add button to expand full form -->
+                <button id="add-task-btn" class="primary-btn" title="Add detailed task">
+                    Add Task
+                </button>
+                
+                <!-- Search box to filter tasks -->
+                <input type="text" 
+                       id="task-search" 
+                       class="search-input"
+                       placeholder="Search tasks..." 
+                       maxlength="50">
+                
+                <!-- Filter and sort dropdown -->
+                <select id="task-filter" class="filter-dropdown">
+                    <option value="all">All Tasks</option>
+                    <optgroup label="Sort by">
+                        <option value="sort-due-asc">Due Date (earliest first)</option>
+                        <option value="sort-created-desc">Creation Date (newest first)</option>
+                        <option value="sort-title-asc">Title (A-Z)</option>
+                    </optgroup>
+                </select>
+                
+                <div class="spacer"></div>
+                
+                <!-- Refresh button (icon only) -->
+                <button id="refresh-tasks-btn" class="icon-btn" title="Refresh tasks" aria-label="Refresh tasks">⟳</button>
+            </div>
+            
+            
+            <!-- 
+                EXPANDABLE TASK FORM - Google Tasks Style
+                This form is hidden by default and expands when + button is clicked
+                Styled to match Google Tasks interface with clean inputs and actions
+            -->
+            <div id="expanded-task-form" class="expanded-form" style="display: none;">
+                <h4>Add New Task</h4>
+                <form id="detailed-task-form">
+                    <!-- Task title input -->
+                    <div class="form-group">
+                        <label for="task-title-detailed">Task Title *</label>
+                        <input type="text" 
+                               id="task-title-detailed" 
+                               class="form-input" 
+                               placeholder="Enter task title" 
+                               maxlength="200" 
+                               required>
+                    </div>
+                    
+                    <!-- Task details/notes input -->
+                    <div class="form-group">
+                        <label for="task-details">Details</label>
+                        <textarea id="task-details" 
+                                  class="form-input" 
+                                  placeholder="Add task details or notes..." 
+                                  rows="3" 
+                                  maxlength="8192"></textarea>
+                    </div>
+                    
+                    <!-- Task URL input -->
+                    <div class="form-group">
+                        <label for="task-url">URL</label>
+                        <div class="input-row">
+                            <input type="url" 
+                                   id="task-url" 
+                                   class="form-input" 
+                                   placeholder="https://example.com" 
+                                   maxlength="2048">
+                            <button type="button" id="use-current-url-btn" class="icon-btn" title="Use current tab URL">⎘</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Due date selection -->
+                    <div class="form-group">
+                        <label>Due Date (optional)</label>
+                        <div class="due-date-buttons">
+                            <button type="button" class="due-btn" data-due="today">Today</button>
+                            <button type="button" class="due-btn" data-due="tomorrow">Tomorrow</button>
+                            <input type="date" id="custom-due-date" class="date-picker">
+                        </div>
+                    </div>
+                    
+                    <!-- Calendar sync removed - tasks with due dates automatically sync -->
+                    
+                    <!-- Form actions -->
+                    <div class="form-actions">
+                        <button type="button" id="cancel-task-btn" class="cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" id="save-task-btn" class="save-btn">
+                            Save Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 
+                TASKS LIST CONTAINER
+                This div will be populated with tasks from Google Tasks API
+                Each task will be rendered as a list item with completion checkbox,
+                title, details, and action buttons (edit, delete)
+            -->
+            <div id="tasks-list" class="tasks-list">
+                <!-- Tasks will be dynamically inserted here -->
+            </div>
+            
+            <!-- No tasks message -->
+            <div id="no-tasks-message" class="no-items" style="display: none;">
+                <p>No tasks found. Add your first task above!</p>
+            </div>
+        </div>
+        
+        <!-- CALENDAR TAB CONTENT - Calendar events interface -->
+        <div class="tab-content" id="calendar-content">
+            
+            <!-- 
+                CALENDAR INTERFACE EXPLANATION:
+                This tab displays Google Calendar events in a clean, organized list
+                - Events are grouped by date (Day, Week, Month views)
+                - Users can create, edit, and delete events directly from the extension
+                - All changes sync immediately with Google Calendar
+                - No external libraries needed - pure API integration
+            -->
+            
+            <!-- Calendar toolbar -->
+            <div id="calendar-toolbar" class="toolbar">
+                <button id="add-event-btn" class="primary-btn">
+                    Add Event
+                </button>
+                <button id="open-calendar-btn" class="secondary-btn">
+                    Open Google Calendar
+                </button>
+                <div class="spacer"></div>
+                <button id="refresh-events-btn" class="icon-btn" title="Refresh events" aria-label="Refresh events">⟳</button>
+            </div>
+            
+            <!-- Content type toggle (full width) -->
+            <div class="content-toggle-container">
+                <div class="content-toggle-group">
+                    <button id="events-only-btn" class="content-toggle-btn active" data-content="events">
+                        📅 Events Only
+                    </button>
+                    <button id="tasks-events-btn" class="content-toggle-btn" data-content="both">
+                        📋 Tasks & Events
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 
+                ADD/EDIT EVENT FORM
+                This form is hidden by default and shows when adding or editing events
+                Fields map directly to Google Calendar API event properties
+            -->
+            <div id="event-form" class="event-form" style="display: none;">
+                <h4 id="event-form-title">Add New Event</h4>
+                <form id="calendar-event-form">
+                    <!-- Event title input -->
+                    <div class="form-group">
+                        <label for="event-title">Event Title *</label>
+                        <input type="text" 
+                               id="event-title" 
+                               class="form-input" 
+                               placeholder="Enter event title" 
+                               maxlength="100" 
+                               required>
+                    </div>
+                    
+                    <!-- Event description input -->
+                    <div class="form-group">
+                        <label for="event-description">Description</label>
+                        <textarea id="event-description" 
+                                  class="form-input" 
+                                  placeholder="Add event description..." 
+                                  rows="3" 
+                                  maxlength="8192"></textarea>
+                    </div>
+                    
+                    <!-- Start date and time -->
+                    <div class="form-group">
+                        <label for="event-start-date">Start Date & Time</label>
+                        <div class="datetime-group">
+                            <input type="date" id="event-start-date" class="form-input" required>
+                            <input type="time" id="event-start-time" class="form-input" placeholder="All day if empty">
+                        </div>
+                    </div>
+                    
+                    <!-- End date and time (optional) -->
+                    <div class="form-group">
+                        <label for="event-end-date">End Date & Time</label>
+                        <div class="datetime-group">
+                            <input type="date" id="event-end-date" class="form-input">
+                            <input type="time" id="event-end-time" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <!-- Event URL input -->
+                    <div class="form-group">
+                        <label for="event-url">URL (optional)</label>
+                        <input type="url" 
+                               id="event-url" 
+                               class="form-input" 
+                               placeholder="https://example.com" 
+                               maxlength="2048">
+                    </div>
+                    
+                    <!-- Form actions -->
+                    <div class="form-actions">
+                        <button type="button" id="cancel-event-btn" class="cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" id="save-event-btn" class="save-btn">
+                            Save Event
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 
+                EVENTS LIST CONTAINER
+                This div will be populated with events from Google Calendar API
+                Events are grouped by date and displayed in a clean list format
+            -->
+            <div id="events-list" class="events-list">
+                <!-- Events will be dynamically inserted here -->
+            </div>
+            
+            <!-- No events message -->
+            <div id="no-events-message" class="no-events-message" style="display: none;">
+                <p>No events found for the selected time period.</p>
+                <p>Click "Add Event" to create your first event!</p>
+            </div>
+        </div>
+        
+        <!-- LINKHIVE CONTENT - Tab saving and organization interface -->
+        <div class="tab-content" id="savetab-content">
+            
+            <!-- LinkHive toolbar -->
+            <div id="linkhive-toolbar" class="toolbar">
+                <button id="save-current-tab-btn" class="primary-btn">Save current tab</button>
+                <button id="linkhive-help" class="icon-btn help-circle" aria-label="Help" title="Save the active browser tab to your LinkHive.">?</button>
+                <div class="spacer"></div>
+                <button id="refresh-savedtabs-btn" class="icon-btn" aria-label="Refresh saved links" title="Refresh">⟳</button>
+                <button id="clear-all-btn" class="secondary-btn rounded-square">Clear All</button>
+            </div>
+            
+            <!-- Saved Tabs List -->
+            <div id="saved-tabs-list" class="saved-tabs-list">
+                <!-- Saved tabs will be dynamically inserted here -->
+            </div>
+                
+                <!-- Save Tab Form (hidden by default) -->
+                <div id="save-tab-form" class="save-tab-form" style="display: none;">
+                    <form id="save-tab-form-element">
+                        <!-- Tab URL (auto-filled, read-only) -->
+                        <div class="form-group">
+                            <label for="saved-tab-url">URL</label>
+                            <input type="url" 
+                                   id="saved-tab-url" 
+                                   class="form-input" 
+                                   readonly>
+                        </div>
+                        
+                        <!-- Tab Title (auto-filled, editable) -->
+                        <div class="form-group">
+                            <label for="saved-tab-title">Title *</label>
+                            <input type="text" 
+                                   id="saved-tab-title" 
+                                   class="form-input" 
+                                   placeholder="Enter custom title" 
+                                   maxlength="200" 
+                                   required>
+                        </div>
+                        
+                        <!-- Optional Note -->
+                        <div class="form-group">
+                            <label for="saved-tab-note">Note</label>
+                            <textarea id="saved-tab-note" 
+                                      class="form-input" 
+                                      placeholder="Add context or reminder..." 
+                                      rows="2" 
+                                      maxlength="500"></textarea>
+                        </div>
+                        
+                        <!-- Group Selector -->
+                        <div class="form-group">
+                            <label for="saved-tab-group">Group</label>
+                            <div class="group-selector">
+                                <select id="saved-tab-group" class="form-input">
+                                    <option value="">Select or create group...</option>
+                                </select>
+                                <input type="text" 
+                                       id="new-group-name" 
+                                       class="form-input" 
+                                       placeholder="New group name" 
+                                       maxlength="50" 
+                                       style="display: none;">
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" id="cancel-save-tab-btn" class="cancel-btn">
+                                Cancel
+                            </button>
+                            <button type="submit" id="confirm-save-tab-btn" class="save-btn">
+                                Save Tab
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SETTINGS TAB CONTENT - Theme and time format preferences -->
+        <div class="tab-content" id="settings-content">
+            <h2 class="settings-title">Settings</h2>
+
+            <!-- Appearance -->
+            <section class="settings-card">
+                <h3>Appearance</h3>
+                <div id="theme-toggle" class="segmented">
+                    <button class="toggle-option" data-theme="light">Light</button>
+                    <button class="toggle-option" data-theme="dark">Dark</button>
+                </div>
+            </section>
+
+            <!-- Time format -->
+            <section class="settings-card">
+                <h3>Time format</h3>
+                <div id="time-format-toggle" class="segmented">
+                    <button class="toggle-option" data-format="12h">12-hour</button>
+                    <button class="toggle-option" data-format="24h">24-hour</button>
+                </div>
+            </section>
+
+            <!-- Google account (last on page; Connect above Logout) -->
+            <section class="settings-card">
+                <h3>Google account</h3>
+                <div id="google-account-status" class="account-row" style="display:none">
+                    <span class="status-dot connected"></span>
+                    <span>Connected to Google</span>
+                </div>
+                <div class="settings-actions">
+                    <button id="settings-login-btn" class="primary-btn rounded-square">Connect to Google</button>
+                    <button id="settings-logout-btn" class="secondary-btn rounded-square" style="display:none">Logout Google account</button>
+                </div>
+            </section>
+        </div>
+        
+        <!-- 
+            STATUS MESSAGES AREA
+            This div displays temporary status messages (success, error, info)
+            Messages appear at the bottom of the interface and auto-dismiss
+        -->
+        <div id="status-messages" class="status-messages"></div>
+        
+        <!-- 
+            FOOTER
+            Simple footer with version information and API credits
+        -->
+        <div class="footer">
+            <p>TaskEx v1.0.0</p>
+            <p>Powered by Google Tasks & Calendar APIs</p>
+        </div>
+    </div>
+    
+    <!-- Load our JavaScript modules -->
+    <script src="storage.js"></script>
+    <script src="saveTab.js"></script>
+    <script src="sidepanel.js"></script>
+</body>
+</html>
+
