@@ -19,7 +19,7 @@
             TOP BAR LAYOUT EXPLANATION:
             Uses CSS Flexbox to create a horizontal layout with three sections:
             1. Left: "TaskEx" title
-            2. Center: Tab navigation buttons (To-Do, Calendar, Settings)
+            2. Center: Tab navigation buttons (To-Do, Calendar, LinkHive)
             3. Right: Login/Logout button
             
             The layout is responsive and maintains proper spacing
@@ -33,8 +33,6 @@
                 <button class="tab-button" id="calendar-tab-btn" data-tab="calendar">Calendar</button>
                 <!-- LinkHive tab button -->
                 <button class="tab-button" id="savetab-tab-btn" data-tab="savetab">LinkHive</button>
-                <!-- Settings tab button -->
-                <button class="tab-button" id="settings-tab-btn" data-tab="settings">Settings</button>
             </nav>
             
         </header>
@@ -43,8 +41,7 @@
             TAB CONTENT AREA:
             Each tab has its own content div that is shown/hidden based on active tab
             - todo-content: Task management interface
-            - calendar-content: Calendar events interface  
-            - settings-content: User preferences interface
+            - calendar-content: Calendar events interface
         -->
         
         <!-- TO-DO TAB CONTENT - Task management interface -->
@@ -375,42 +372,6 @@
             </div>
         </div>
         
-        <!-- SETTINGS TAB CONTENT - Theme and time format preferences -->
-        <div class="tab-content" id="settings-content">
-            <h2 class="settings-title">Settings</h2>
-
-            <!-- Appearance -->
-            <section class="settings-card">
-                <h3>Appearance</h3>
-                <div id="theme-toggle" class="segmented">
-                    <button class="toggle-option" data-theme="light">Light</button>
-                    <button class="toggle-option" data-theme="dark">Dark</button>
-                </div>
-            </section>
-
-            <!-- Time format -->
-            <section class="settings-card">
-                <h3>Time format</h3>
-                <div id="time-format-toggle" class="segmented">
-                    <button class="toggle-option" data-format="12h">12-hour</button>
-                    <button class="toggle-option" data-format="24h">24-hour</button>
-                </div>
-            </section>
-
-            <!-- Google account (last on page; Connect above Logout) -->
-            <section class="settings-card">
-                <h3>Google account</h3>
-                <div id="google-account-status" class="account-row" style="display:none">
-                    <span class="status-dot connected"></span>
-                    <span>Connected to Google</span>
-                </div>
-                <div class="settings-actions">
-                    <button id="settings-login-btn" class="primary-btn rounded-square">Connect to Google</button>
-                    <button id="settings-logout-btn" class="secondary-btn rounded-square" style="display:none">Logout Google account</button>
-                </div>
-            </section>
-        </div>
-        
         <!-- 
             STATUS MESSAGES AREA
             This div displays temporary status messages (success, error, info)
@@ -419,12 +380,33 @@
         <div id="status-messages" class="status-messages"></div>
         
         <!-- 
-            FOOTER
-            Simple footer with version information and API credits
+            PERSISTENT FOOTER BAR
+            Appears across all tabs with theme controls and account status
         -->
-        <div class="footer">
-            <p>TaskEx v1.0.0</p>
-            <p>Powered by Google Tasks & Calendar APIs</p>
+        <div class="footer-bar">
+            <!-- Left: Light/Dark Mode Toggle -->
+            <div class="footer-section footer-left">
+                <label class="theme-toggle-label" title="Toggle light/dark mode">
+                    <input type="checkbox" id="footer-theme-toggle" class="theme-toggle-checkbox">
+                    <span class="theme-toggle-slider"></span>
+                    <span class="theme-toggle-text">🌙</span>
+                </label>
+            </div>
+            
+            <!-- Center: Time Format Toggle -->
+            <div class="footer-section footer-center">
+                <button id="footer-time-format-btn" class="time-format-btn-footer" title="Toggle time format">
+                    12h
+                </button>
+            </div>
+            
+            <!-- Right: Google Account Status -->
+            <div class="footer-section footer-right">
+                <div class="account-status-indicator">
+                    <span class="status-dot" id="footer-status-dot"></span>
+                    <button id="footer-auth-btn" class="auth-btn-footer">Login</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -434,4 +416,3 @@
     <script src="sidepanel.js"></script>
 </body>
 </html>
-

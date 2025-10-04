@@ -1,4 +1,4 @@
-/*
+﻿/*
    SIDEPANEL.JS - TaskEx Chrome Extension Frontend
    This file handles the side panel interface and communicates with Google Tasks and Calendar APIs
    through the background service worker. Each function is explained in simple terms.
@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load user settings first (theme, time format)
     loadSettings();
+    
+    // Initialize footer bar
+    initFooterBar();
     loadStarredTasks();
     
     // Set up all the interactive elements
@@ -241,6 +244,10 @@ function updateAuthUI() {
     // Header auth buttons removed - only update Settings section
     // All account controls now live in Settings only
     updateGoogleAccountUI(isAuthenticated);
+    
+    // Also update footer bar auth status
+    if (typeof updateFooterAuthStatus === 'function') {
+        updateFooterAuthStatus();
 }
 
 /**
@@ -982,7 +989,7 @@ function renderTasks() {
                 urlLink.className = 'task-url';
                 urlLink.href = urlMatch[1];
                 urlLink.target = '_blank';
-                urlLink.textContent = '🔗 ' + urlMatch[1];
+                urlLink.textContent = 'ðŸ”— ' + urlMatch[1];
                 taskContent.appendChild(urlLink);
             } else {
                 // Show all notes as details
@@ -996,7 +1003,7 @@ function renderTasks() {
             const dueDateDiv = document.createElement('div');
             dueDateDiv.className = 'task-due-date';
             const dueDate = new Date(task.due);
-            dueDateDiv.textContent = '📅 Due: ' + dueDate.toLocaleDateString();
+            dueDateDiv.textContent = 'ðŸ“… Due: ' + dueDate.toLocaleDateString();
             taskContent.appendChild(dueDateDiv);
         }
         
@@ -1009,7 +1016,7 @@ function renderTasks() {
         // Edit button
         const editBtn = document.createElement('button');
         editBtn.className = 'action-btn edit-btn';
-        editBtn.innerHTML = '✏️';
+        editBtn.innerHTML = 'âœï¸';
         editBtn.title = 'Edit task';
         editBtn.addEventListener('click', () => startTaskEdit(task.id));
         actionsDiv.appendChild(editBtn);
@@ -1017,7 +1024,7 @@ function renderTasks() {
         // Delete button
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'action-btn delete-btn';
-        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.innerHTML = 'ðŸ—‘ï¸';
         deleteBtn.title = 'Delete task';
         deleteBtn.addEventListener('click', () => confirmDeleteTask(task.id));
         actionsDiv.appendChild(deleteBtn);
@@ -1026,7 +1033,7 @@ function renderTasks() {
         const starButton = document.createElement('button');
         starButton.className = 'action-btn star-btn';
         const starred = isTaskStarred(task.id);
-        starButton.innerHTML = starred ? '⭐' : '☆';
+        starButton.innerHTML = starred ? 'â­' : 'â˜†';
         starButton.title = starred ? 'Unstar task' : 'Star task to pin to top';
         
         // Star click handler - toggles starred status
@@ -1480,7 +1487,7 @@ function renderEvents() {
                     urlLink.className = 'event-url';
                     urlLink.href = urlMatch[1];
                     urlLink.target = '_blank';
-                    urlLink.textContent = '🔗 ' + urlMatch[1];
+                    urlLink.textContent = 'ðŸ”— ' + urlMatch[1];
                     eventContent.appendChild(urlLink);
                 } else {
                     // Show description as is (truncated)
@@ -1494,7 +1501,7 @@ function renderEvents() {
             if (event.location) {
                 const locationDiv = document.createElement('div');
                 locationDiv.className = 'event-location';
-                locationDiv.textContent = '📍 ' + event.location;
+                locationDiv.textContent = 'ðŸ“ ' + event.location;
                 eventContent.appendChild(locationDiv);
             }
             
@@ -1507,7 +1514,7 @@ function renderEvents() {
             // Edit button
             const editBtn = document.createElement('button');
             editBtn.className = 'action-btn edit-btn';
-            editBtn.innerHTML = '✏️';
+            editBtn.innerHTML = 'âœï¸';
             editBtn.title = 'Edit event';
             editBtn.addEventListener('click', () => startEventEdit(event));
             actionsDiv.appendChild(editBtn);
@@ -1515,7 +1522,7 @@ function renderEvents() {
             // Delete button
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'action-btn delete-btn';
-            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.innerHTML = 'ðŸ—‘ï¸';
             deleteBtn.title = 'Delete event';
             deleteBtn.addEventListener('click', () => deleteEvent(event.id));
             actionsDiv.appendChild(deleteBtn);
@@ -1800,7 +1807,7 @@ function toggleExpandedForm(forceOpen = null) {
     const nextState = forceOpen !== null ? forceOpen : !isOpen;
     if (expandedForm) expandedForm.style.display = nextState ? 'block' : 'none';
     if (expandBtn) {
-        expandBtn.innerHTML = nextState ? '<span class="btn-icon">−</span>' : '<span class="btn-icon">+</span>';
+        expandBtn.innerHTML = nextState ? '<span class="btn-icon">âˆ’</span>' : '<span class="btn-icon">+</span>';
         expandBtn.title = nextState ? 'Close form' : 'Add detailed task';
     }
     if (nextState) {
@@ -1952,7 +1959,7 @@ function createCalendarEventFromTask(title, details, dueDate, url = '') {
         
         // Prepare event data
         const eventData = {
-            title: `📋 ${title}`, // Add task emoji to distinguish from regular events
+            title: `ðŸ“‹ ${title}`, // Add task emoji to distinguish from regular events
             description: eventDescription,
             startDateTime: taskDueDate.toISOString(),
             endDateTime: endTime.toISOString(),
@@ -2193,7 +2200,7 @@ function showEventsLoading() {
     const noEventsMsg = document.getElementById('no-events-message');
     
     if (eventsList) {
-        eventsList.innerHTML = '<div class="loading-message">📅 Loading events...</div>';
+        eventsList.innerHTML = '<div class="loading-message">ðŸ“… Loading events...</div>';
     }
     if (noEventsMsg) {
         noEventsMsg.style.display = 'none';
@@ -2212,7 +2219,7 @@ function showEventsError(message) {
     if (eventsList) {
         eventsList.innerHTML = `
             <div class="error-message">
-                <div class="error-icon">❌</div>
+                <div class="error-icon">âŒ</div>
                 <div class="error-text">${message}</div>
                 <button onclick="syncEvents()" class="retry-btn">Retry</button>
             </div>
@@ -2823,7 +2830,7 @@ function renderEventItem(event, container) {
     // Edit button
     const editBtn = document.createElement('button');
     editBtn.className = 'action-btn edit-btn';
-    editBtn.innerHTML = '✏️';
+    editBtn.innerHTML = 'âœï¸';
     editBtn.title = 'Edit event';
     editBtn.addEventListener('click', () => startEventEdit(event));
     actionsDiv.appendChild(editBtn);
@@ -2831,7 +2838,7 @@ function renderEventItem(event, container) {
     // Delete button
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'action-btn delete-btn';
-    deleteBtn.innerHTML = '🗑️';
+    deleteBtn.innerHTML = 'ðŸ—‘ï¸';
     deleteBtn.title = 'Delete event';
     deleteBtn.addEventListener('click', () => deleteEvent(event.id));
     actionsDiv.appendChild(deleteBtn);
@@ -2857,7 +2864,7 @@ function renderTaskAsEvent(task, container) {
     // Task title with task icon
     const titleDiv = document.createElement('div');
     titleDiv.className = 'event-title';
-    titleDiv.innerHTML = `📋 ${task.title}`;
+    titleDiv.innerHTML = `ðŸ“‹ ${task.title}`;
     if (task.status === 'completed') {
         titleDiv.classList.add('completed');
     }
@@ -2887,7 +2894,7 @@ function renderTaskAsEvent(task, container) {
     // Complete/uncomplete button
     const completeBtn = document.createElement('button');
     completeBtn.className = 'action-btn complete-btn';
-    completeBtn.innerHTML = task.status === 'completed' ? '✅' : '☐';
+    completeBtn.innerHTML = task.status === 'completed' ? 'âœ…' : 'â˜';
     completeBtn.title = task.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete';
     completeBtn.addEventListener('click', () => {
         toggleTaskCompletion(task.id, task.status !== 'completed');
@@ -3141,6 +3148,159 @@ function showError(message) {
     showStatus(message, 'error');
     console.error('Error:', message);
 }
+
+
+// =============================================================================
+// FOOTER BAR FUNCTIONS - Persistent footer controls
+// =============================================================================
+
+/**
+ * Initialize footer bar controls
+ * Called on page load to set up theme, time format, and auth status
+ */
+function initFooterBar() {
+    console.log('Initializing footer bar...');
+    
+    // Load saved preferences from localStorage
+    loadFooterPreferences();
+    
+    // Set up event listeners
+    setupFooterEventListeners();
+    
+    // Update auth status
+    updateFooterAuthStatus();
+}
+
+/**
+ * Load saved preferences from localStorage and apply them
+ */
+function loadFooterPreferences() {
+    // Load theme preference (light/dark)
+    const savedTheme = localStorage.getItem('taskex_theme') || 'light';
+    applyTheme(savedTheme);
+    
+    // Update theme toggle checkbox to match
+    const themeToggle = document.getElementById('footer-theme-toggle');
+    if (themeToggle) {
+        themeToggle.checked = (savedTheme === 'dark');
+    }
+    
+    // Load time format preference
+    const savedTimeFormat = localStorage.getItem('taskex_timeFormat') || '12h';
+    window.timeFormat = savedTimeFormat;
+    
+    // Update time format button text
+    const timeBtn = document.getElementById('footer-time-format-btn');
+    if (timeBtn) {
+        timeBtn.textContent = savedTimeFormat;
+    }
+}
+
+/**
+ * Set up event listeners for footer controls
+ */
+function setupFooterEventListeners() {
+    // Theme toggle (Light/Dark mode)
+    const themeToggle = document.getElementById('footer-theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'dark' : 'light';
+            applyTheme(newTheme);
+            localStorage.setItem('taskex_theme', newTheme);
+            showStatus(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode activated`, 'success');
+        });
+    }
+    
+    // Time format toggle button
+    const timeBtn = document.getElementById('footer-time-format-btn');
+    if (timeBtn) {
+        timeBtn.addEventListener('click', () => {
+            // Toggle between 12h and 24h
+            const newFormat = (window.timeFormat === '12h') ? '24h' : '12h';
+            window.timeFormat = newFormat;
+            
+            // Update button text
+            timeBtn.textContent = newFormat;
+            
+            // Save to localStorage
+            localStorage.setItem('taskex_timeFormat', newFormat);
+            
+            // Show feedback
+            showStatus(`Time format: ${newFormat === '12h' ? '12-hour' : '24-hour'}`, 'success');
+            
+            // Refresh displayed times if authenticated
+            if (window.isAuthenticated) {
+                if (typeof renderTasks === 'function') {
+                    renderTasks();
+                }
+                if (currentEvents && currentEvents.length > 0 && typeof renderEvents === 'function') {
+                    renderEvents();
+                }
+            }
+        });
+    }
+    
+    // Auth button (Login/Logout)
+    const authBtn = document.getElementById('footer-auth-btn');
+    if (authBtn) {
+        authBtn.addEventListener('click', () => {
+            if (window.isAuthenticated) {
+                handleLogout();
+            } else {
+                handleLogin();
+            }
+        });
+    }
+}
+
+/**
+ * Apply theme to the entire app
+ * @param {string} theme - 'light' or 'dark'
+ */
+function applyTheme(theme) {
+    const body = document.body;
+    
+    if (theme === 'dark') {
+        body.classList.add('theme-dark');
+        body.classList.remove('theme-light');
+    } else {
+        body.classList.add('theme-light');
+        body.classList.remove('theme-dark');
+    }
+    
+    window.currentTheme = theme;
+}
+
+/**
+ * Update footer auth status indicator and button
+ * Called when authentication state changes
+ */
+function updateFooterAuthStatus() {
+    const statusDot = document.getElementById('footer-status-dot');
+    const authBtn = document.getElementById('footer-auth-btn');
+    
+    if (window.isAuthenticated) {
+        // Connected state - green dot, Logout button
+        if (statusDot) {
+            statusDot.classList.add('connected');
+        }
+        if (authBtn) {
+            authBtn.textContent = 'Logout';
+            authBtn.classList.add('logout');
+        }
+    } else {
+        // Not connected - red dot, Login button
+        if (statusDot) {
+            statusDot.classList.remove('connected');
+        }
+        if (authBtn) {
+            authBtn.textContent = 'Login';
+            authBtn.classList.remove('logout');
+        }
+    }
+}
+
+
 
 console.log('TaskEx popup.js loaded successfully!');
 

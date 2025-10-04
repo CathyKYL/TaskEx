@@ -1,4 +1,4 @@
-/* 
+﻿/* 
    SIDEPANEL.CSS - TaskEx Chrome Extension Styles
    This file contains all styling including the theme system and responsive layout.
    
@@ -268,67 +268,9 @@ html, body {
 /* Rounded-square button style to match others */
 .rounded-square,
 #clear-all-btn,
-#save-current-tab-btn,
-#settings-login-btn,
-#settings-logout-btn {
+#save-current-tab-btn {
     border-radius: 10px;       /* align with rest of the app */
     padding: 8px 12px;
-}
-
-/* Settings page styles */
-.settings-title {
-    padding: 8px 12px;
-}
-
-.settings-card {
-    margin: 12px;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-elevated);
-}
-
-.segmented {
-    display: inline-flex;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.segmented .toggle-option {
-    padding: 6px 10px;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.segmented .toggle-option.active {
-    background: var(--accent-muted);
-    color: var(--text-primary);
-}
-
-.account-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--border-color);
-}
-
-.status-dot.connected {
-    background: var(--accent);
-}
-
-.settings-actions {
-    display: flex;
-    gap: 10px;
 }
 
 /* Duplicate .tab-button rules removed - using #nav-tabs .tab-button above */
@@ -666,7 +608,7 @@ html, body {
 }
 
 .task-checkbox.completed::after {
-    content: '✓';
+    content: 'âœ“';
     font-size: 12px;
     font-weight: bold;
 }
@@ -1361,135 +1303,6 @@ html, body {
 }
 
 /* =============================================================================
-   SETTINGS TAB STYLES - User preferences interface
-   ============================================================================= */
-
-.settings-header {
-    margin-bottom: 24px;
-}
-
-.settings-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.setting-group {
-    margin-bottom: 24px;
-    padding: 16px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-}
-
-.setting-group h4 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    color: var(--text-primary);
-}
-
-.setting-description {
-    color: var(--text-secondary);
-    font-size: 13px;
-    margin-bottom: 16px;
-    line-height: 1.5;
-}
-
-.setting-help {
-    color: var(--text-muted);
-    font-size: 11px;
-    margin-top: 8px;
-    line-height: 1.3;
-    font-style: italic;
-}
-
-/* Google Account Controls */
-.google-account-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 8px;
-}
-
-.account-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background: var(--accent-light);
-    border: 1px solid var(--accent-primary);
-    border-radius: 6px;
-    color: var(--accent-primary);
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.status-icon {
-    font-size: 16px;
-}
-
-.status-text {
-    flex: 1;
-}
-
-/* 
-   TOGGLE GROUP STYLING EXPLANATION:
-   Toggle groups use flexbox to create side-by-side buttons
-   - Only one option can be active at a time
-   - Active state is controlled by JavaScript adding 'active' class
-   - Hover effects provide visual feedback
-   - Icons and labels are clearly separated for accessibility
-*/
-
-.toggle-group {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.toggle-option {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 12px 8px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.toggle-option:hover {
-    background: var(--accent-light);
-    border-color: var(--accent-primary);
-}
-
-.toggle-option.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
-}
-
-.toggle-option.active:hover {
-    background: var(--accent-hover);
-}
-
-.toggle-icon {
-    font-size: 18px;
-    line-height: 1;
-}
-
-.toggle-label {
-    font-size: 12px;
-    font-weight: 500;
-    text-align: center;
-}
-
-/* =============================================================================
    STATUS MESSAGES - Success, error, and info notifications
    ============================================================================= */
 
@@ -1648,18 +1461,203 @@ html, body {
 .mt-1 { margin-top: 8px; }
 .mt-2 { margin-top: 16px; }
 .mt-3 { margin-top: 24px; }
-
 /* --- Visibility guards for tab panes (prevents accidental overrides) --- */
 #todo-content,
 #calendar-content,
-#savetab-content,
-#settings-content {
+#savetab-content {
   display: none;
 }
 
 #todo-content.active,
 #calendar-content.active,
-#savetab-content.active,
-#settings-content.active {
+#savetab-content.active {
   display: block;
 }
+
+/* Main content container (below header) should already exist; keep it if present) */
+.app-main, #app-main { display:flex; flex-direction:column; flex:1; min-height:0; }
+
+/* =============================================================================
+   PERSISTENT FOOTER BAR - Theme controls and account status
+   ============================================================================= */
+
+.footer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 8px var(--shadow-color);
+    z-index: 999;
+    flex-shrink: 0;
+}
+
+/* Footer sections */
+.footer-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.footer-left {
+    justify-content: flex-start;
+}
+
+.footer-center {
+    justify-content: center;
+}
+
+.footer-right {
+    justify-content: flex-end;
+}
+
+/* Theme toggle (Light/Dark mode) */
+.theme-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    position: relative;
+}
+
+.theme-toggle-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-toggle-slider {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    background: var(--border-color);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+.theme-toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle-checkbox:checked + .theme-toggle-slider {
+    background: var(--accent-primary);
+}
+
+.theme-toggle-checkbox:checked + .theme-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.theme-toggle-label:hover .theme-toggle-slider {
+    background: var(--accent-light);
+}
+
+.theme-toggle-checkbox:checked + .theme-toggle-slider:hover {
+    background: var(--accent-hover);
+}
+
+.theme-toggle-text {
+    font-size: 16px;
+    user-select: none;
+}
+
+/* Time format toggle button */
+.time-format-btn-footer {
+    padding: 4px 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    text-align: center;
+}
+
+.time-format-btn-footer:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.time-format-btn-footer:active {
+    transform: scale(0.95);
+}
+
+/* Account status indicator */
+.account-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--error-color);
+    transition: background 0.3s ease;
+}
+
+.status-dot.connected {
+    background: var(--success-color);
+}
+
+/* Auth button in footer */
+.auth-btn-footer {
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auth-btn-footer:hover {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.auth-btn-footer.logout {
+    background: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+}
+
+.auth-btn-footer.logout:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
+
+/* Adjust tab content to account for footer */
+.tab-content {
+    padding-bottom: 48px; /* Extra space for footer */
+}
+
+/* Adjust status messages position */
+.status-messages {
+    bottom: 48px !important; /* Above footer */
+}
+
+
