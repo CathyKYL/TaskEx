@@ -21,14 +21,19 @@ console.log('TaskEx background script loaded');
  */
 async function getToken(interactive = false) {
     return new Promise((resolve) => {
+        console.log(`[Background] Getting auth token (interactive: ${interactive})...`);
+        
         // Use Chrome's built-in OAuth flow - no custom URLs needed!
         chrome.identity.getAuthToken({ interactive }, (token) => {
             if (chrome.runtime.lastError) {
-                console.warn('getAuthToken error:', chrome.runtime.lastError.message);
+                console.warn('[Background] getAuthToken error:', chrome.runtime.lastError.message);
                 resolve(null);
-            } else {
-                console.log('Successfully obtained auth token');
+            } else if (token) {
+                console.log('[Background] ✓ Token obtained successfully');
                 resolve(token);
+            } else {
+                console.warn('[Background] ✗ No token received (user may have cancelled)');
+                resolve(null);
             }
         });
     });
@@ -327,36 +332,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleCheckAuth(sendResponse) {
     try {
+        console.log('[Background] Checking authentication status...');
         const authenticated = await isAuthenticated();
+        console.log(`[Background] Auth status: ${authenticated ? 'authenticated' : 'not authenticated'}`);
         sendResponse({ success: true, authenticated });
     } catch (error) {
+        console.error('[Background] Error checking auth:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
 
 async function handleAuthenticate(sendResponse) {
     try {
+        console.log('[Background] === Starting Interactive Authentication ===');
         const token = await getToken(true); // Interactive authentication
-        sendResponse({ success: true, authenticated: !!token });
+        
+        if (token) {
+            console.log('[Background] ✓ Authentication successful - token acquired');
+            sendResponse({ success: true, authenticated: true });
+        } else {
+            console.warn('[Background] ✗ Authentication failed - no token received');
+            sendResponse({ success: false, error: 'Authentication cancelled or failed' });
+        }
     } catch (error) {
+        console.error('[Background] ✗ Authentication error:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
 
 async function handleLogout(sendResponse) {
     try {
+        console.log('[Background] === Starting Logout ===');
         await signOut();
+        console.log('[Background] ✓ Logout successful');
         sendResponse({ success: true });
     } catch (error) {
+        console.error('[Background] ✗ Logout error:', error);
         sendResponse({ success: false, error: error.message });
     }
 }
 
 async function handleGetTasks(sendResponse) {
     try {
+        console.log('[Background] Fetching tasks...');
         const tasks = await getTasks();
+        console.log(`[Background] ✓ Fetched ${tasks.length} tasks`);
         sendResponse({ success: true, tasks });
     } catch (error) {
+        console.error('[Background] ✗ Error fetching tasks:', error.message);
         sendResponse({ success: false, error: error.message });
     }
 }
@@ -390,9 +413,12 @@ async function handleDeleteTask(data, sendResponse) {
 
 async function handleGetEvents(sendResponse) {
     try {
-        const events = await getCalendarEvents(10);
+        console.log('[Background] Fetching calendar events...');
+        const events = await getCalendarEvents(50);
+        console.log(`[Background] ✓ Fetched ${events.length} events`);
         sendResponse({ success: true, events });
     } catch (error) {
+        console.error('[Background] ✗ Error fetching events:', error.message);
         sendResponse({ success: false, error: error.message });
     }
 }

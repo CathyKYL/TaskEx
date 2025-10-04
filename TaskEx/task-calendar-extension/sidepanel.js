@@ -33,10 +33,6 @@ let timeFormat = '12h';          // Time format: '12h' or '24h'
 document.addEventListener('DOMContentLoaded', function() {
     console.log('TaskEx side panel loaded!');
     
-    // Sanity check: verify critical elements exist
-    console.log('[init] settings element exists?', !!document.getElementById('settings-content'));
-    console.log('[init] settings button exists?', !!document.getElementById('settings-tab-btn'));
-    
     // Load user settings first (theme, time format)
     loadSettings();
     loadStarredTasks();
@@ -52,8 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user is logged in and load data
     checkAuthenticationStatus();
     
-    // Ensure To-Do tab is active by default and load tasks
-    // Note: showTab is defined in setupTabSwitching, so we'll call it after setup
+    // Get current page info for tab URL features
     getCurrentPageInfo();
 });
 
@@ -192,85 +187,140 @@ async function apiRequest(action, payload = {}) {
  * Updates the UI to show login/logout buttons accordingly
  */
 function checkAuthenticationStatus() {
-    console.log('Checking authentication status...');
+    console.log('[Auth] === Checking Authentication Status ===');
     
     // Ask background script if user is authenticated
     chrome.runtime.sendMessage({action: 'checkAuth'}, (response) => {
+        // Check for Chrome runtime errors first
+        if (chrome.runtime.lastError) {
+            console.error('[Auth] Chrome runtime error:', chrome.runtime.lastError);
+            showError('Extension communication error. Please reload the extension.');
+            return;
+        }
+        
         if (response && response.success) {
             isAuthenticated = response.authenticated;
+            console.log(`[Auth] Authentication status: ${isAuthenticated ? '✓ Logged in' : '✗ Logged out'}`);
+            
             updateAuthUI();
             
             if (isAuthenticated) {
                 // User is logged in - load their data
-                console.log('User is authenticated, loading data...');
+                console.log('[Auth] Loading user data...');
                 getTasks();
                 getEvents();
                 
-                // Update Google account UI in Settings
-                updateGoogleAccountUI(true);
-                
-                // If Settings is currently shown, refresh it
-                const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
-                if (settingsShown) initializeSettingsTab();
+                // Update footer authentication status
+                updateFooterAuthStatus();
                 
                 // Ensure To-Do tab is visible and tasks are loaded
                 showTab('todo');
             } else {
                 // User is not logged in - show login prompt
-                console.log('User is not authenticated');
-                updateGoogleAccountUI(false);
+                console.log('[Auth] User needs to log in');
                 
-                // If Settings is currently shown, refresh it
-                const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
-                if (settingsShown) initializeSettingsTab();
+                // Update footer authentication status
+                updateFooterAuthStatus();
                 
                 showLoginPrompt();
             }
         } else {
-            console.error('Failed to check authentication:', response?.error);
+            console.error('[Auth] Failed to check authentication:', response?.error);
             showError('Unable to verify login status. Please try again.');
+            
+            // Assume logged out on error
+            isAuthenticated = false;
+            updateFooterAuthStatus();
         }
     });
 }
 
 /**
  * Update the authentication UI based on login status
- * Shows/hides login and logout buttons in the top bar
+ * Shows/hides login and logout buttons in the footer
  */
 function updateAuthUI() {
-    // Header auth buttons removed - only update Settings section
-    // All account controls now live in Settings only
+    // Update old Settings section (if exists)
     updateGoogleAccountUI(isAuthenticated);
+    
+    // Update footer authentication status
+    updateFooterAuthStatus();
 }
 
 /**
  * Show a message prompting user to log in
  */
 function showLoginPrompt() {
-    const tasksList = document.getElementById('tasks-list');
-    const eventsList = document.getElementById('calendar-events');
+    console.log('[Auth] Showing login prompt...');
     
-    tasksList.innerHTML = '<li class="login-prompt">Please log in to Google to see your tasks</li>';
-    eventsList.innerHTML = '<li class="login-prompt">Please log in to Google to see your events</li>';
+    const tasksList = document.getElementById('tasks-list');
+    const eventsList = document.getElementById('events-list');
+    
+    // Check if elements exist before trying to modify them
+    if (tasksList) {
+        tasksList.innerHTML = '<div class="no-items"><p>Please log in to Google to see your tasks</p></div>';
+        console.log('[Auth] Tasks list login prompt displayed');
+    } else {
+        console.warn('[Auth] tasks-list element not found');
+    }
+    
+    if (eventsList) {
+        eventsList.innerHTML = '<div class="no-items"><p>Please log in to Google to see your calendar events</p></div>';
+        console.log('[Auth] Events list login prompt displayed');
+    } else {
+        console.warn('[Auth] events-list element not found');
+    }
 }
 
 /**
  * Handle login button click - start Google authentication
  */
 function handleLogin() {
-    console.log('Starting login process...');
+    console.log('[Auth] === Starting Google Login Flow ===');
     showStatus('Logging in to Google...', 'info');
     
     // Ask background script to start authentication
     chrome.runtime.sendMessage({action: 'authenticate'}, (response) => {
+        // Check for Chrome runtime errors first
+        if (chrome.runtime.lastError) {
+            console.error('[Auth] Chrome runtime error during login:', chrome.runtime.lastError);
+            showError('Extension communication error. Please reload the extension and try again.');
+            return;
+        }
+        
         if (response && response.success) {
-            // Authentication started - check status after a delay
-            setTimeout(() => {
-                checkAuthenticationStatus();
-            }, 2000);
+            console.log('[Auth] ✓ Login successful! Token acquired.');
+            showStatus('Login successful!', 'success');
+            
+            // Update authentication state
+            isAuthenticated = true;
+            
+            // Update footer UI immediately
+            updateFooterAuthStatus();
+            
+            // Load user data
+            console.log('[Auth] Loading user tasks and events...');
+            getTasks();
+            getEvents();
+            
+            // Switch to todo tab to show tasks
+            showTab('todo');
         } else {
-            console.error('Failed to start authentication:', response?.error);
-            showError('Unable to start Google login. Please check your internet connection and try again.');
+            const errorMsg = response?.error || 'Unknown error';
+            console.error('[Auth] ✗ Login failed:', errorMsg);
+            
+            // Show user-friendly error messages
+            if (errorMsg.includes('User cancelled') || errorMsg.includes('canceled')) {
+                showStatus('Login cancelled', 'warning');
+            } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+                showError('Could not connect to Google. Please check your internet connection.');
+            } else {
+                showError('Unable to login to Google. Please try again.');
+            }
+            
+            // Ensure footer shows logged out state
+            isAuthenticated = false;
+            updateFooterAuthStatus();
         }
     });
 }
@@ -279,18 +329,43 @@ function handleLogin() {
  * Handle logout button click - remove Google authentication
  */
 function handleLogout() {
-    console.log('Logging out...');
+    console.log('[Auth] === Starting Google Logout ===');
     showStatus('Logging out...', 'info');
     
     // Ask background script to logout
     chrome.runtime.sendMessage({action: 'logout'}, (response) => {
+        // Check for Chrome runtime errors first
+        if (chrome.runtime.lastError) {
+            console.error('[Auth] Chrome runtime error during logout:', chrome.runtime.lastError);
+            showError('Extension communication error. Please reload the extension and try again.');
+            return;
+        }
+        
         if (response && response.success) {
+            console.log('[Auth] ✓ Logout complete. Token revoked.');
+            
+            // Update authentication state
             isAuthenticated = false;
-            updateAuthUI();
+            
+            // Update footer UI
+            updateFooterAuthStatus();
+            
+            // Clear data
+            currentTasks = [];
+            currentEvents = [];
+            
+            // Show login prompts
             showLoginPrompt();
+            
+            // Clear the lists
+            const tasksList = document.getElementById('tasks-list');
+            const eventsList = document.getElementById('events-list');
+            if (tasksList) tasksList.innerHTML = '';
+            if (eventsList) eventsList.innerHTML = '';
+            
             showStatus('Logged out successfully', 'success');
         } else {
-            console.error('Failed to logout:', response?.error);
+            console.error('[Auth] ✗ Logout failed:', response?.error);
             showError('Unable to logout from Google. Please try again.');
         }
     });
@@ -341,8 +416,11 @@ function applyTheme(theme) {
     document.body.className = `theme-${theme}`;
     currentTheme = theme;
     
-    // Update theme toggle UI
+    // Update theme toggle UI (old Settings tab - kept for backward compatibility)
     updateThemeToggleUI();
+    
+    // Update footer theme icon
+    updateFooterThemeIcon();
     
     // Save theme preference
     chrome.storage.local.set({ theme: theme }, () => {
@@ -358,23 +436,15 @@ function applyTheme(theme) {
 // Interface toggle UI function removed - always using side panel
 
 /**
- * Update Google account UI in Settings tab
- * @param {boolean} isAuthenticated - Whether user is authenticated
+ * Update Google account UI (legacy function for old Settings tab)
+ * @param {boolean} authenticated - Whether user is authenticated
  */
-function updateGoogleAccountUI(isAuthenticated) {
-    const settingsLoginBtn = document.getElementById('settings-login-btn');
-    const settingsLogoutBtn = document.getElementById('settings-logout-btn');
-    const googleAccountStatus = document.getElementById('google-account-status');
+function updateGoogleAccountUI(authenticated) {
+    // This function is kept for backward compatibility
+    // The old Settings elements no longer exist, but we keep this to avoid breaking other code
     
-    if (isAuthenticated) {
-        if (settingsLoginBtn) settingsLoginBtn.style.display = 'none';
-        if (settingsLogoutBtn) settingsLogoutBtn.style.display = 'block';
-        if (googleAccountStatus) googleAccountStatus.style.display = 'flex';
-    } else {
-        if (settingsLoginBtn) settingsLoginBtn.style.display = 'block';
-        if (settingsLogoutBtn) settingsLogoutBtn.style.display = 'none';
-        if (googleAccountStatus) googleAccountStatus.style.display = 'none';
-    }
+    // Update footer authentication status instead
+    updateFooterAuthStatus();
 }
 
 /**
@@ -405,6 +475,9 @@ function setTimeFormat(format) {
     
     timeFormat = format;
     updateTimeFormatUI();
+    
+    // Update footer time format label
+    updateFooterTimeFormatLabel();
     
     // Save time format preference
     chrome.storage.local.set({ timeFormat: format }, () => {
@@ -441,20 +514,6 @@ function updateTimeFormatUI() {
     }
 }
 
-/**
- * Initialize Settings tab when it becomes visible.
- * Ensures toggles & account state reflect current values.
- */
-function initializeSettingsTab() {
-  console.log('[Settings] initializeSettingsTab()');
-  try {
-    updateThemeToggleUI();
-    updateTimeFormatUI();
-    updateGoogleAccountUI(isAuthenticated);
-  } catch (e) {
-    console.error('[Settings] init failed:', e);
-  }
-}
 
 /**
  * Format time according to user's preference
@@ -504,106 +563,90 @@ function formatDateTime(date) {
 }
 
 /**
- * Set up event handlers for settings toggles and buttons
+ * Set up event handlers for footer settings controls
  */
 function setupSettingsHandlers() {
-    console.log('Setting up settings handlers...');
+    console.log('Setting up footer settings handlers...');
     
-    // Interface mode toggle removed - always using side panel
-    
-    // Google Account controls in Settings
-    const settingsLoginBtn = document.getElementById('settings-login-btn');
-    const settingsLogoutBtn = document.getElementById('settings-logout-btn');
-    const googleAccountStatus = document.getElementById('google-account-status');
-    
-    if (settingsLoginBtn) {
-        settingsLoginBtn.addEventListener('click', async () => {
-            try {
-                showStatus('Connecting to Google...', 'info');
-                const result = await authenticateUser();
-                if (result.success) {
-                    showStatus('Successfully connected to Google!', 'success');
-                    updateGoogleAccountUI(true);
-                    
-                    // If Settings is currently shown, refresh it
-                    const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
-                    if (settingsShown) initializeSettingsTab();
-                } else {
-                    showError('Failed to connect to Google: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error during Google login:', error);
-                showError('Unable to connect to Google. Please check your internet connection and try again.');
-            }
+    // Theme toggle button in footer
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            // Toggle between light and dark theme
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+            showStatus(`Switched to ${newTheme} theme`, 'success');
         });
     }
     
-    if (settingsLogoutBtn) {
-        settingsLogoutBtn.addEventListener('click', async () => {
-            try {
-                showStatus('Disconnecting from Google...', 'info');
-                const result = await logoutUser();
-                if (result.success) {
-                    showStatus('Successfully disconnected from Google', 'success');
-                    updateGoogleAccountUI(false);
-                    
-                    // If Settings is currently shown, refresh it
-                    const settingsShown = document.getElementById('settings-content')?.classList.contains('active');
-                    if (settingsShown) initializeSettingsTab();
-                    
-                    // Clear data
-                    currentTasks = [];
-                    currentEvents = [];
-                    renderTasks();
-                    renderEvents();
-                } else {
-                    showError('Failed to disconnect from Google: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error during Google logout:', error);
-                showError('Unable to disconnect from Google. Please try again.');
-            }
+    // Time format toggle button in footer
+    const timeFormatBtn = document.getElementById('time-format-btn');
+    if (timeFormatBtn) {
+        timeFormatBtn.addEventListener('click', () => {
+            // Toggle between 12h and 24h format
+            const newFormat = timeFormat === '12h' ? '24h' : '12h';
+            setTimeFormat(newFormat);
+            showStatus(`Time format set to ${newFormat.toUpperCase()}`, 'success');
         });
     }
     
-    // Theme toggle handlers
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
-            if (e.target.classList.contains('toggle-option') || e.target.closest('.toggle-option')) {
-                const option = e.target.closest('.toggle-option');
-                const theme = option.getAttribute('data-theme');
-                if (theme && theme !== currentTheme) {
-                    applyTheme(theme);
-                    showStatus(`Switched to ${theme} theme`, 'success');
-                }
-            }
-        });
-    }
-    
-    // Time format toggle handlers
-    const timeFormatToggle = document.getElementById('time-format-toggle');
-    if (timeFormatToggle) {
-        timeFormatToggle.addEventListener('click', (e) => {
-            if (e.target.classList.contains('toggle-option') || e.target.closest('.toggle-option')) {
-                const option = e.target.closest('.toggle-option');
-                const format = option.getAttribute('data-format');
-                if (format && format !== timeFormat) {
-                    setTimeFormat(format);
-                    showStatus(`Time format set to ${format.toUpperCase()}`, 'success');
-                }
-            }
-        });
-    }
-    
-    // Connect calendar button handler
-    const connectBtn = document.getElementById('connect-calendar-btn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', () => {
-            if (!isAuthenticated) {
+    // Google auth toggle button in footer
+    const authToggleBtn = document.getElementById('auth-toggle-btn');
+    if (authToggleBtn) {
+        authToggleBtn.addEventListener('click', () => {
+            if (isAuthenticated) {
+                // User is logged in - perform logout
+                handleLogout();
+            } else {
+                // User is logged out - perform login
                 handleLogin();
             }
         });
+    }
+    
+    // Initialize footer UI based on current authentication status
+    updateFooterAuthStatus();
+    updateFooterThemeIcon();
+    updateFooterTimeFormatLabel();
+}
+
+/**
+ * Update footer authentication status indicator and button label
+ */
+function updateFooterAuthStatus() {
+    const authDot = document.getElementById('auth-status-dot');
+    const authBtnLabel = document.getElementById('auth-btn-label');
+    
+    if (authDot) {
+        if (isAuthenticated) {
+            authDot.classList.add('connected');
+        } else {
+            authDot.classList.remove('connected');
+        }
+    }
+    
+    if (authBtnLabel) {
+        authBtnLabel.textContent = isAuthenticated ? 'Logout' : 'Login';
+    }
+}
+
+/**
+ * Update footer theme icon based on current theme
+ */
+function updateFooterThemeIcon() {
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+        themeIcon.textContent = currentTheme === 'light' ? '☀️' : '🌙';
+    }
+}
+
+/**
+ * Update footer time format label
+ */
+function updateFooterTimeFormatLabel() {
+    const timeFormatLabel = document.getElementById('time-format-label');
+    if (timeFormatLabel) {
+        timeFormatLabel.textContent = timeFormat;
     }
 }
 
@@ -717,35 +760,50 @@ function isTaskStarred(taskId) {
  * - Updates currentTasks array and renders the task list
  */
 function getTasks() {
-    console.log('Fetching tasks from Google Tasks...');
+    console.log('[Tasks] === Fetching Tasks from Google ===');
+    
+    if (!isAuthenticated) {
+        console.warn('[Tasks] Not authenticated - showing login prompt');
+        showLoginPrompt();
+        return;
+    }
     
     // Show loading message
     const tasksList = document.getElementById('tasks-list');
     if (tasksList) {
         tasksList.innerHTML = '<div class="loading-message">Loading tasks...</div>';
+        console.log('[Tasks] Loading indicator displayed');
+    } else {
+        console.warn('[Tasks] tasks-list element not found');
     }
     
     // Request tasks from background script
     chrome.runtime.sendMessage({action: 'getTasks'}, (response) => {
+        // Check for Chrome runtime errors first
         if (chrome.runtime.lastError) {
-            console.error('Chrome runtime error:', chrome.runtime.lastError);
-            showError('Extension error. Please reload the extension.');
+            console.error('[Tasks] Chrome runtime error:', chrome.runtime.lastError);
+            showError('Extension communication error. Please reload the extension.');
+            if (tasksList) {
+                tasksList.innerHTML = '<div class="error-message">Extension error</div>';
+            }
             return;
         }
         
         if (response && response.success) {
-            console.log('Tasks fetched successfully:', response.tasks?.length || 0);
+            console.log(`[Tasks] ✓ Fetched ${response.tasks?.length || 0} tasks successfully`);
             currentTasks = response.tasks || [];
             renderTasks();
         } else {
-            console.error('Error fetching tasks - full response:', response);
-            console.error('Chrome runtime error:', chrome.runtime.lastError);
-            
-            // Show user-friendly error message
             const errorMsg = response?.error || 'Unknown error';
-            if (errorMsg.includes('Authentication required') || errorMsg.includes('401')) {
-                showError('Your Google login has expired. Please log out and log back in.');
+            console.error('[Tasks] ✗ Failed to fetch tasks:', errorMsg);
+            
+            // Handle token expiry - automatically log out
+            if (errorMsg.includes('Authentication required') || errorMsg.includes('401') || errorMsg.includes('expired')) {
+                console.warn('[Tasks] Token expired - clearing session');
+                isAuthenticated = false;
+                updateFooterAuthStatus();
                 showLoginPrompt();
+                showError('Your Google login has expired. Please log in again.');
             } else if (errorMsg.includes('403') || errorMsg.includes('forbidden')) {
                 showError('Permission denied. Please check your Google Tasks permissions.');
             } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
@@ -1673,8 +1731,7 @@ function setupTabSwitching() {
   const tabContents = {
     'todo': document.getElementById('todo-content'),
     'calendar': document.getElementById('calendar-content'),
-    'savetab': document.getElementById('savetab-content'),
-    'settings': document.getElementById('settings-content')
+    'savetab': document.getElementById('savetab-content')
   };
 
   function applyTabVisibility(activeKey) {
@@ -1706,8 +1763,6 @@ function setupTabSwitching() {
       getEvents();
     } else if (activeKey === 'savetab') {
       if (typeof initSaveTab === 'function') initSaveTab();
-    } else if (activeKey === 'settings') {
-      initializeSettingsTab();
     }
   }
 
@@ -1724,10 +1779,6 @@ function setupTabSwitching() {
     console.log('[showTab] switching to', tabName);
     applyTabVisibility(tabName);
   };
-
-  // Safety: explicit buttons (in case querySelectorAll misses anything)
-  const settingsBtn = document.getElementById('settings-tab-btn');
-  if (settingsBtn) settingsBtn.addEventListener('click', () => window.showTab('settings'));
 
   // Initial tab
   window.requestAnimationFrame(() => window.showTab('todo'));
@@ -2163,24 +2214,41 @@ function setupCalendarListeners() {
  * - Handles all error cases with user-friendly messages
  */
 async function getEvents() {
-    console.log('Fetching events from Google Calendar API...');
+    console.log('[Events] === Fetching Events from Google Calendar ===');
     
     if (!isAuthenticated) {
+        console.warn('[Events] Not authenticated - showing login prompt');
         showEventsError('Please log in to Google to view your calendar events.');
         return;
     }
     
     // Show loading state
     showEventsLoading();
+    console.log('[Events] Loading indicator displayed');
     
     try {
         const data = await apiRequest('getEvents');
-        console.log(`Fetched ${data.items?.length || 0} calendar events`);
+        console.log(`[Events] ✓ Fetched ${data.items?.length || 0} events successfully`);
         currentEvents = data.items || [];
         renderEvents();
     } catch (error) {
-        console.error('Error fetching events:', error);
-        showEventsError(error.message);
+        const errorMsg = error.message || 'Unknown error';
+        console.error('[Events] ✗ Failed to fetch events:', errorMsg);
+        
+        // Handle token expiry - automatically log out
+        if (errorMsg.includes('Authentication required') || errorMsg.includes('401') || errorMsg.includes('expired')) {
+            console.warn('[Events] Token expired - clearing session');
+            isAuthenticated = false;
+            updateFooterAuthStatus();
+            showLoginPrompt();
+            showEventsError('Your Google login has expired. Please log in again.');
+        } else if (errorMsg.includes('403') || errorMsg.includes('forbidden')) {
+            showEventsError('Permission denied. Please check your Google Calendar permissions.');
+        } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+            showEventsError('Could not connect to Google Calendar. Please check your internet connection.');
+        } else {
+            showEventsError(errorMsg);
+        }
     }
 }
 
