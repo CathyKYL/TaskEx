@@ -36,8 +36,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize LinkHive groups dropdown
     loadGroups();
     
-    // Add URL button event listener
-    document.getElementById('insert-current-tab-url')?.addEventListener('click', async () => {
+     // === LINKHIVE: Handle "Create New Group" visibility ===
+  const groupSelect = document.getElementById("saved-tab-group");
+  const newGroupContainer = document.getElementById("inline-new-group");
+  const createBtn = document.getElementById("confirm-create-group");
+  const newGroupInput = document.getElementById("new-group-name");
+  const errorMsg = document.getElementById("group-name-error");
+
+  if (groupSelect && newGroupContainer) {
+    groupSelect.addEventListener("change", () => {
+      if (groupSelect.value === "__new__") {
+        newGroupContainer.classList.remove("hidden");
+        newGroupInput.focus();
+      } else {
+        newGroupContainer.classList.add("hidden");
+      }
+    });
+
+    createBtn.addEventListener("click", async () => {
+      const name = newGroupInput.value.trim();
+      if (!name) {
+        errorMsg.style.display = "block";
+        errorMsg.textContent = "Please enter a group name.";
+        return;
+      }
+      errorMsg.style.display = "none";
+
+      const savedTabs = await getSavedTabs();
+      if (!savedTabs[name]) {
+        savedTabs[name] = [];
+        await setStorageData({ savedTabs });
+      }
+
+      const newOption = document.createElement("option");
+      newOption.value = name;
+      newOption.textContent = name;
+      groupSelect.insertBefore(newOption, groupSelect.querySelector('option[value="__new__"]'));
+      groupSelect.value = name;
+
+      newGroupContainer.classList.add("hidden");
+      newGroupInput.value = "";
+    });
+
+    // Clear error when user starts typing
+    newGroupInput.addEventListener("input", () => {
+      if (errorMsg) errorMsg.style.display = "none";
+    });
+  }
+
+  // Add URL button event listener
+  document.getElementById('insert-current-tab-url')?.addEventListener('click', async () => {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         const urlInput = document.getElementById('saved-tab-url');
         if (urlInput && tab?.url) {
@@ -54,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
         clearAllBtn.addEventListener('click', clearAllLinkHive);
         clearAllBtn.__wired = true;
     }
-    console.log('TaskEx side panel loaded!');
     
     // Load user settings first (theme, time format)
     loadSettings();
@@ -210,26 +257,21 @@ async function apiRequest(action, payload = {}) {
  * Updates the UI to show login/logout buttons accordingly
  */
 function checkAuthenticationStatus() {
-    console.log('[Auth] === Checking Authentication Status ===');
-    
     // Ask background script if user is authenticated
     chrome.runtime.sendMessage({action: 'checkAuth'}, (response) => {
         // Check for Chrome runtime errors first
         if (chrome.runtime.lastError) {
-            console.error('[Auth] Chrome runtime error:', chrome.runtime.lastError);
             showError('Extension communication error. Please reload the extension.');
             return;
         }
         
         if (response && response.success) {
             isAuthenticated = response.authenticated;
-            console.log(`[Auth] Authentication status: ${isAuthenticated ? '✓ Logged in' : '✗ Logged out'}`);
             
             updateAuthUI();
             
             if (isAuthenticated) {
                 // User is logged in - load their data
-                console.log('[Auth] Loading user data...');
                 getTasks();
                 getEvents();
                 
@@ -240,15 +282,12 @@ function checkAuthenticationStatus() {
                 showTab('todo');
             } else {
                 // User is not logged in - show login prompt
-                console.log('[Auth] User needs to log in');
-                
                 // Update footer authentication status
                 updateFooterAuthStatus();
                 
                 showLoginPrompt();
             }
         } else {
-            console.error('[Auth] Failed to check authentication:', response?.error);
             showError('Unable to verify login status. Please try again.');
             
             // Assume logged out on error
@@ -3481,48 +3520,64 @@ async function saveGroups(groups) {
     await chrome.storage.local.set({ [GROUPS_KEY]: groups });
 }
 
-document.addEventListener('change', async (e) => {
-    if (e.target && e.target.id === 'saved-tab-group') {
-        const value = e.target.value;
-        const newGroupContainer = document.getElementById('inline-new-group');
-        if (!newGroupContainer) return;
-        if (value === '__new__') {
-            newGroupContainer.classList.remove('hidden');
-            const input = document.getElementById('new-group-name');
-            if (input) input.focus();
-        } else {
-            newGroupContainer.classList.add('hidden');
-        }
+// Clear error when user types in new group name
+document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'new-group-name') {
+        const errorDiv = document.getElementById('group-name-error');
+        if (errorDiv) errorDiv.style.display = 'none';
     }
 });
 
 document.addEventListener('click', async (e) => {
     if (e.target && e.target.id === 'confirm-create-group') {
+        e.preventDefault();
+        
         const input = document.getElementById('new-group-name');
+        const errorDiv = document.getElementById('group-name-error');
         const name = input ? input.value.trim() : '';
+        
+        // Clear previous error
+        if (errorDiv) errorDiv.style.display = 'none';
+        
         if (!name) {
-            if (typeof showError === 'function') showError('Group name cannot be empty');
+            // Show inline error
+            if (errorDiv) {
+                errorDiv.textContent = 'Please enter a group name.';
+                errorDiv.style.display = 'block';
+            }
+            if (input) input.focus();
             return;
         }
 
         const data = await chrome.storage.local.get(GROUPS_KEY);
         const groups = data[GROUPS_KEY] || [];
         if (groups.includes(name)) {
-            if (typeof showError === 'function') showError('Group already exists');
+            // Show inline error for duplicate
+            if (errorDiv) {
+                errorDiv.textContent = 'Group already exists.';
+                errorDiv.style.display = 'block';
+            }
+            if (input) input.focus();
             return;
         }
+        
+        // Add the new group
         groups.push(name);
         await saveGroups(groups);
 
-        // Create visual group
+        // Create visual group container if needed
         if (typeof createGroup === 'function') {
             createGroup(name);
         }
 
-        // Refresh dropdown
+        // Refresh dropdown and auto-select the new group
         await loadGroups();
+        const dropdown = document.getElementById('saved-tab-group');
+        if (dropdown) {
+            dropdown.value = name;
+        }
 
-        // Reset input UI
+        // Reset input UI and hide the container
         if (input) input.value = '';
         const newGroupContainer = document.getElementById('inline-new-group');
         if (newGroupContainer) newGroupContainer.classList.add('hidden');
@@ -3584,6 +3639,4 @@ function showError(message) {
 }
 
 console.log('TaskEx popup.js loaded successfully!');
-
-
 

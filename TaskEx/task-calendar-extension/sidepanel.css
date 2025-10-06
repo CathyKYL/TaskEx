@@ -444,6 +444,21 @@ html, body {
     padding: 16px;
     margin-bottom: 16px;
     box-shadow: 0 2px 8px var(--shadow-color);
+    animation: expandForm 0.3s ease-out;
+    transform-origin: top;
+}
+
+@keyframes expandForm {
+    from {
+        opacity: 0;
+        transform: scaleY(0.95);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+        max-height: 1000px;
+    }
 }
 
 .expanded-form h4 {
@@ -575,18 +590,67 @@ html, body {
   margin-bottom: 16px;
 }
 
-#inline-new-group {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
+/* Hidden state - use !important to override any conflicting styles */
+#inline-new-group.hidden {
+  display: none !important;
 }
 
-#inline-new-group.hidden {
-  display: none;
+/* Visible state - column layout for proper stacking */
+#inline-new-group {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 8px;
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Input row layout */
+#inline-new-group .input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 #new-group-name {
   flex: 1;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+#new-group-name:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+#new-group-name::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Error message styling */
+#group-name-error {
+  color: var(--error-color);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .cancel-btn, .save-btn {

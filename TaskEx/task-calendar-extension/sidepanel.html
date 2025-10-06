@@ -305,14 +305,8 @@
                 <button id="clear-all-btn" class="secondary-btn rounded-square">Clear All</button>
             </div>
             
-            
-            <!-- Saved Tabs List -->
-            <div id="saved-tabs-list" class="saved-tabs-list">
-                <!-- Saved tabs will be dynamically inserted here -->
-            </div>
-                
-                <!-- Save Tab Form (hidden by default) -->
-                <div id="save-tab-form" class="save-tab-form" style="display: none;">
+            <!-- Save Tab Form (hidden by default, positioned like To-Do form) -->
+            <div id="save-tab-form" class="expanded-form" style="display: none;">
                     <h4>Save Current Tab</h4>
                     <form id="save-tab-form-element">
                         <!-- Hidden field for edit mode detection -->
@@ -328,9 +322,12 @@
                             </select>
 
                             <!-- Inline "create new group" row (hidden by default) -->
-                            <div id="inline-new-group" class="input-row hidden" style="margin-top:8px;">
-                                <input type="text" id="new-group-name" class="form-input" placeholder="New group name">
-                                <button type="button" id="confirm-create-group" class="secondary-btn">Create</button>
+                            <div id="inline-new-group" class="hidden">
+                                <div class="input-row">
+                                    <input type="text" id="new-group-name" class="form-input" placeholder="Enter new group name…">
+                                    <button type="button" id="confirm-create-group" class="secondary-btn">Create</button>
+                                </div>
+                                <div id="group-name-error" class="inline-error" style="display:none;">Please enter a group name.</div>
                             </div>
                         </div>
 
@@ -362,7 +359,12 @@
                         </div>
                     </form>
                 </div>
+            
+            <!-- Saved Tabs List -->
+            <div id="saved-tabs-list" class="saved-tabs-list">
+                <!-- Saved tabs will be dynamically inserted here -->
             </div>
+            
         </div>
         
         
