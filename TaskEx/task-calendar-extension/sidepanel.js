@@ -32,57 +32,71 @@ let timeFormat = '12h';          // Time format: '12h' or '24h'
  * Main initialization function - runs when side panel HTML is loaded
  * Sets up all the interactive elements and checks authentication
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Initialize LinkHive groups dropdown
-    loadGroups();
+    await loadGroups();
     
-     // === LINKHIVE: Handle "Create New Group" visibility ===
-  const groupSelect = document.getElementById("saved-tab-group");
-  const newGroupContainer = document.getElementById("inline-new-group");
-  const createBtn = document.getElementById("confirm-create-group");
-  const newGroupInput = document.getElementById("new-group-name");
-  const errorMsg = document.getElementById("group-name-error");
+    // === LINKHIVE: Always-visible "Create New Group" logic ===
+    const createGroupBtn = document.getElementById("confirm-create-group");
+    const newGroupInput = document.getElementById("new-group-name");
+    const errorMsg = document.getElementById("group-name-error");
+    const groupSelect = document.getElementById("saved-tab-group");
 
-  if (groupSelect && newGroupContainer) {
-    groupSelect.addEventListener("change", () => {
-      if (groupSelect.value === "__new__") {
-        newGroupContainer.classList.remove("hidden");
-        newGroupInput.focus();
-      } else {
-        newGroupContainer.classList.add("hidden");
-      }
-    });
+    if (createGroupBtn && newGroupInput && groupSelect) {
+        // Clear error when user starts typing
+        newGroupInput.addEventListener("input", () => {
+            if (errorMsg) errorMsg.style.display = "none";
+        });
 
-    createBtn.addEventListener("click", async () => {
-      const name = newGroupInput.value.trim();
-      if (!name) {
-        errorMsg.style.display = "block";
-        errorMsg.textContent = "Please enter a group name.";
-        return;
-      }
-      errorMsg.style.display = "none";
+        // Handle group creation
+        createGroupBtn.addEventListener("click", async () => {
+            const name = newGroupInput.value.trim();
 
-      const savedTabs = await getSavedTabs();
-      if (!savedTabs[name]) {
-        savedTabs[name] = [];
-        await setStorageData({ savedTabs });
-      }
+            if (!name) {
+                errorMsg.style.display = "block";
+                errorMsg.textContent = "Please enter a group name.";
+                return;
+            }
+            errorMsg.style.display = "none";
 
-      const newOption = document.createElement("option");
-      newOption.value = name;
-      newOption.textContent = name;
-      groupSelect.insertBefore(newOption, groupSelect.querySelector('option[value="__new__"]'));
-      groupSelect.value = name;
+            const savedTabs = await getSavedTabs();
 
-      newGroupContainer.classList.add("hidden");
-      newGroupInput.value = "";
-    });
+            // Create new group if not exist
+            if (!savedTabs[name]) {
+                savedTabs[name] = [];
+                await setStorageData({ savedTabs });
 
-    // Clear error when user starts typing
-    newGroupInput.addEventListener("input", () => {
-      if (errorMsg) errorMsg.style.display = "none";
-    });
-  }
+                // Also save to GROUPS_KEY for persistence
+                const data = await chrome.storage.local.get(GROUPS_KEY);
+                const groups = data[GROUPS_KEY] || [];
+                if (!groups.includes(name)) {
+                    groups.push(name);
+                    await saveGroups(groups);
+                }
+
+                // Add to dropdown (append to end)
+                const newOption = document.createElement("option");
+                newOption.value = name;
+                newOption.textContent = name;
+                groupSelect.appendChild(newOption);
+            }
+
+            groupSelect.value = name;
+            newGroupInput.value = "";
+
+            // Save current tab in new group
+            const title = document.getElementById("saved-tab-title")?.value.trim();
+            const note = document.getElementById("saved-tab-note")?.value.trim();
+            const url = document.getElementById("saved-tab-url")?.value.trim();
+
+            if (url && title) {
+                savedTabs[name].push({ title, note, url });
+                await setStorageData({ savedTabs });
+            }
+
+            if (typeof renderSavedTabs === "function") await renderSavedTabs();
+        });
+    }
 
   // Add URL button event listener
   document.getElementById('insert-current-tab-url')?.addEventListener('click', async () => {
@@ -3399,11 +3413,6 @@ async function loadGroupsIntoSelect() {
     } catch (e) {
         console.warn('Failed to load groups from storage', e);
     }
-
-    const newOpt = document.createElement('option');
-    newOpt.value = '__new__';
-    newOpt.textContent = '+ Create New Group…';
-    select.appendChild(newOpt);
 }
 
 // Form handling functions
@@ -3439,7 +3448,6 @@ function resetSaveTabForm() {
     if (el('save-tab-form-element')) el('save-tab-form-element').reset();
     ['saved-tab-url','saved-tab-title','saved-tab-note','new-group-name'].forEach(id => { if (el(id)) el(id).value=''; });
     if (el('saved-tab-group')) el('saved-tab-group').value = '';
-    if (el('inline-new-group')) el('inline-new-group').classList.add('hidden');
     if (el('editing-savedtab-id')) el('editing-savedtab-id').value = '';
     const submit = document.getElementById('save-link-btn') || document.getElementById('save-tab-submit');
     if (submit) submit.textContent = 'Save Link';
@@ -3474,12 +3482,7 @@ async function clearAllLinkHive() {
   } else if (sel) {
     sel.innerHTML = '';
     sel.appendChild(new Option('-- Select Group --', ''));
-    sel.appendChild(new Option('+ Create New Group…', '__new__'));
   }
-
-  // hide inline new-group row if visible
-  const inline = document.getElementById('inline-new-group');
-  if (inline) inline.classList.add('hidden');
 
   // 5) re-render (if renderer exists) and toast
   if (typeof renderSavedTabs === 'function') await renderSavedTabs();
@@ -3509,82 +3512,12 @@ async function loadGroups() {
     } catch (e) {
         console.warn('Failed to load groups from storage', e);
     }
-
-    const newOpt = document.createElement('option');
-    newOpt.value = '__new__';
-    newOpt.textContent = '+ Create New Group…';
-    select.appendChild(newOpt);
 }
 
 async function saveGroups(groups) {
     await chrome.storage.local.set({ [GROUPS_KEY]: groups });
 }
 
-// Clear error when user types in new group name
-document.addEventListener('input', (e) => {
-    if (e.target && e.target.id === 'new-group-name') {
-        const errorDiv = document.getElementById('group-name-error');
-        if (errorDiv) errorDiv.style.display = 'none';
-    }
-});
-
-document.addEventListener('click', async (e) => {
-    if (e.target && e.target.id === 'confirm-create-group') {
-        e.preventDefault();
-        
-        const input = document.getElementById('new-group-name');
-        const errorDiv = document.getElementById('group-name-error');
-        const name = input ? input.value.trim() : '';
-        
-        // Clear previous error
-        if (errorDiv) errorDiv.style.display = 'none';
-        
-        if (!name) {
-            // Show inline error
-            if (errorDiv) {
-                errorDiv.textContent = 'Please enter a group name.';
-                errorDiv.style.display = 'block';
-            }
-            if (input) input.focus();
-            return;
-        }
-
-        const data = await chrome.storage.local.get(GROUPS_KEY);
-        const groups = data[GROUPS_KEY] || [];
-        if (groups.includes(name)) {
-            // Show inline error for duplicate
-            if (errorDiv) {
-                errorDiv.textContent = 'Group already exists.';
-                errorDiv.style.display = 'block';
-            }
-            if (input) input.focus();
-            return;
-        }
-        
-        // Add the new group
-        groups.push(name);
-        await saveGroups(groups);
-
-        // Create visual group container if needed
-        if (typeof createGroup === 'function') {
-            createGroup(name);
-        }
-
-        // Refresh dropdown and auto-select the new group
-        await loadGroups();
-        const dropdown = document.getElementById('saved-tab-group');
-        if (dropdown) {
-            dropdown.value = name;
-        }
-
-        // Reset input UI and hide the container
-        if (input) input.value = '';
-        const newGroupContainer = document.getElementById('inline-new-group');
-        if (newGroupContainer) newGroupContainer.classList.add('hidden');
-
-        if (typeof showStatus === 'function') showStatus(`Group "${name}" created`, 'success');
-    }
-});
 
 /**
  * Get information about the current webpage

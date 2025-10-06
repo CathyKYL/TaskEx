@@ -312,25 +312,6 @@
                         <!-- Hidden field for edit mode detection -->
                         <input type="hidden" id="editing-savedtab-id" value="">
                         
-                        <!-- Group selector INSIDE the Save form -->
-                        <div class="form-group group-selector">
-                            <label for="saved-tab-group">Group</label>
-                            <select id="saved-tab-group" class="form-input">
-                                <option value="">-- Select Group --</option>
-                                <!-- populated by JS -->
-                                <option value="__new__">+ Create New Group…</option>
-                            </select>
-
-                            <!-- Inline "create new group" row (hidden by default) -->
-                            <div id="inline-new-group" class="hidden">
-                                <div class="input-row">
-                                    <input type="text" id="new-group-name" class="form-input" placeholder="Enter new group name…">
-                                    <button type="button" id="confirm-create-group" class="secondary-btn">Create</button>
-                                </div>
-                                <div id="group-name-error" class="inline-error" style="display:none;">Please enter a group name.</div>
-                            </div>
-                        </div>
-
                         <!-- Title (first), Note (second), URL (third) -->
                         <div class="form-group">
                             <label for="saved-tab-title">Title *</label>
@@ -350,6 +331,24 @@
                                 <input type="url" id="saved-tab-url" class="form-input" readonly>
                                 <!-- This button must INSERT the current page URL (not copy) -->
                                 <button type="button" id="insert-current-tab-url" class="icon-btn" title="Use current tab URL">⎘</button>
+                            </div>
+                        </div>
+
+                        <!-- Group selector MOVED to after URL field -->
+                        <div class="form-group group-selector">
+                            <label for="saved-tab-group">Group</label>
+                            <select id="saved-tab-group" class="form-input">
+                                <option value="">-- Select Group --</option>
+                                <!-- populated by JS -->
+                            </select>
+
+                            <!-- Always visible "Create New Group" section -->
+                            <div id="inline-new-group" class="create-group-section">
+                                <div class="input-row">
+                                    <input type="text" id="new-group-name" class="form-input" placeholder="Enter new group name...">
+                                    <button type="button" id="confirm-create-group" class="secondary-btn">Create</button>
+                                </div>
+                                <div id="group-name-error" class="inline-error" style="display:none;">Please enter a group name.</div>
                             </div>
                         </div>
 

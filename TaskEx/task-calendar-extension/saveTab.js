@@ -139,12 +139,6 @@ class SaveTabManager {
             saveTabForm.addEventListener('submit', this.handleSaveTabFormSubmit);
         }
 
-        // Group selector change
-        const groupSelector = document.getElementById('saved-tab-group');
-        if (groupSelector) {
-            groupSelector.addEventListener('change', this.handleGroupSelectorChange);
-        }
-
         // Refresh saved tabs button
         const refreshTabsBtn = document.getElementById('refresh-savedtabs-btn');
         if (refreshTabsBtn) {
@@ -232,13 +226,13 @@ class SaveTabManager {
         const noteEl  = document.getElementById('saved-tab-note');
         const urlEl   = document.getElementById('saved-tab-url');
         const groupEl = document.getElementById('saved-tab-group');
-        const newGroupEl = document.getElementById('inline-new-group');
+        const newGroupInputEl = document.getElementById('new-group-name');
         
         if (titleEl) titleEl.value = '';
         if (noteEl)  noteEl.value  = '';
         if (urlEl)   urlEl.value   = '';
         if (groupEl) groupEl.value = '';
-        if (newGroupEl) newGroupEl.classList.add('hidden');
+        if (newGroupInputEl) newGroupInputEl.value = '';
     }
 
     /**
@@ -315,21 +309,6 @@ class SaveTabManager {
         this.hideSaveTabForm();
     }
 
-    /**
-     * Handle group selector change
-     */
-    handleGroupSelectorChange(event) {
-        const groupSelector = event.target;
-        const newGroupInput = document.getElementById('new-group-name');
-        
-        if (groupSelector.value === 'new' && newGroupInput) {
-            newGroupInput.style.display = 'block';
-            newGroupInput.focus();
-        } else if (newGroupInput) {
-            newGroupInput.style.display = 'none';
-            newGroupInput.value = '';
-        }
-    }
 
     /**
      * Update group selector with current groups

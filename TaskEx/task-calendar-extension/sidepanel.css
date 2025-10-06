@@ -590,27 +590,18 @@ html, body {
   margin-bottom: 16px;
 }
 
-/* Hidden state - use !important to override any conflicting styles */
-#inline-new-group.hidden {
-  display: none !important;
-}
-
-/* Visible state - column layout for proper stacking */
-#inline-new-group {
-  display: flex !important;
+/* Always-visible Create New Group section */
+.create-group-section {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 6px;
   margin-top: 8px;
-  animation: slideDown 0.2s ease-out;
 }
 
-/* Input row layout */
-#inline-new-group .input-row {
+.create-group-section .input-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
 }
 
 #new-group-name {
@@ -636,21 +627,9 @@ html, body {
 }
 
 /* Error message styling */
-#group-name-error {
+.inline-error {
   color: var(--error-color);
   font-size: 12px;
-  margin-top: 4px;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .cancel-btn, .save-btn {
