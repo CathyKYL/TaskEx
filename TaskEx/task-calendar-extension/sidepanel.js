@@ -1783,6 +1783,19 @@ function setupTabSwitching() {
   };
 
   function applyTabVisibility(activeKey) {
+    // Clear forms when switching away from tabs
+    const currentActiveTab = Array.from(Object.entries(tabContents)).find(([key, el]) => el && el.classList.contains('active'));
+    if (currentActiveTab) {
+      const [currentKey] = currentActiveTab;
+      if (currentKey === 'todo' && activeKey !== 'todo') {
+        // Switching away from To-Do tab - clear task form
+        if (typeof clearTaskForm === 'function') clearTaskForm();
+      } else if (currentKey === 'savetab' && activeKey !== 'savetab') {
+        // Switching away from LinkHive tab - clear link form
+        if (typeof resetSaveTabForm === 'function') resetSaveTabForm();
+      }
+    }
+    
     // Hide all
     Object.values(tabContents).forEach(el => {
       if (!el) return;
@@ -1799,8 +1812,23 @@ function setupTabSwitching() {
       return;
     }
     activeContent.classList.add('active');
-    activeContent.style.display = 'block';
+    activeContent.style.display = 'flex'; // Changed from 'block' to 'flex' for proper layout
 
+    // --- added: refresh and clear URL fields on tab switch ---
+if (typeof getCurrentPageInfo === 'function') {
+    try { getCurrentPageInfo(); } catch (e) { console.warn('getCurrentPageInfo failed', e); }
+  }
+  
+  if (activeKey !== 'todo') {
+    const taskUrlInput = document.getElementById('task-url');
+    if (taskUrlInput) taskUrlInput.value = '';
+  }
+  
+  if (activeKey !== 'savetab') {
+    const savedTabUrl = document.getElementById('saved-tab-url');
+    if (savedTabUrl) savedTabUrl.value = '';
+  }
+  
     const activeButton = document.querySelector(`[data-tab="${activeKey}"]`);
     if (activeButton) activeButton.classList.add('active');
 
@@ -2069,19 +2097,23 @@ function createCalendarEventFromTask(title, details, dueDate, url = '') {
     }
 }
 
-/**
- * Use current page URL in the task form
- */
-function useCurrentPageUrl() {
-    const urlInput = document.getElementById('task-url');
-    if (urlInput && currentPageUrl) {
-        urlInput.value = currentPageUrl;
-        showStatus('Current page URL added', 'success');
-    } else {
-        showError('No current page URL available');
+// Always grab the real current tab URL when the button is clicked
+async function useCurrentPageUrl() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const urlInput = document.getElementById('task-url');
+      if (urlInput && tab?.url) {
+        urlInput.value = tab.url;
+        if (typeof showStatus === 'function') showStatus('Current page URL added', 'success');
+      } else {
+        if (typeof showError === 'function') showError('No current page URL available');
+      }
+    } catch (e) {
+      if (typeof showError === 'function') showError('Unable to get current tab URL');
+      console.error(e);
     }
-}
-
+  }
+  
 /**
  * Filter and sort tasks based on search and filter criteria
  * EXPLANATION: Handles both filtering by search/tags and sorting by different criteria

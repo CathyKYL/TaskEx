@@ -307,11 +307,14 @@ html, body {
     flex: 1;
     padding: 16px;
     overflow-y: auto;
-    display: none;
-}
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
 
 .tab-content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 /* =============================================================================
@@ -1546,6 +1549,16 @@ html, body {
     padding-bottom: 50px;
 }
 
+/* Make list containers extend to full height */
+.tasks-list,
+.events-list,
+.saved-tabs-list {
+  flex-grow: 1;
+  min-height: calc(100vh - 140px); /* Adjust offset based on your header/footer */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
 /* =============================================================================
    RESPONSIVE ADJUSTMENTS - Mobile and small screen optimizations
    ============================================================================= */
@@ -1644,5 +1657,6 @@ html, body {
 #todo-content.active,
 #calendar-content.active,
 #savetab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
