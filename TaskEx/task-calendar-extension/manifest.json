@@ -5,7 +5,18 @@
   "action": { 
     "default_title": "TaskEx"
   },
-  "permissions": ["identity", "storage", "tabs", "sidePanel", "contextMenus", "notifications"],
+  "permissions": [
+    "identity",
+    "storage",
+    "tabs",
+    "activeTab",
+    "sidePanel",
+    "contextMenus",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "oauth2": {
     "client_id": "994610319815-ditlfkceb19313g35vvqppl8qr7sbuah.apps.googleusercontent.com",
     "scopes": [

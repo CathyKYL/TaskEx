@@ -527,6 +527,65 @@ html, body {
     margin-top: 20px;
 }
 
+/* Make LinkHive use the same action layout as tasks */
+.saved-tab-item .tab-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;              /* hidden by default, like tasks */
+  transition: opacity 0.3s ease;
+}
+.saved-tab-item:hover .tab-actions {
+  opacity: 1;
+}
+
+/* If your task styles key on .task-actions, mirror them onto .tab-actions */
+.tab-actions .action-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+/* Optional: same hover accents as tasks */
+.tab-actions .action-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+.tab-actions .delete-btn:hover {
+  background: #ffebee;
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+/* LinkHive group selector within Save Current Tab form */
+.group-selector {
+  margin-bottom: 16px;
+}
+
+#inline-new-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#inline-new-group.hidden {
+  display: none;
+}
+
+#new-group-name {
+  flex: 1;
+}
+
 .cancel-btn, .save-btn {
     padding: 10px 20px;
     border: none;
@@ -1200,11 +1259,12 @@ html, body {
     background: var(--bg-secondary);
 }
 
-.saved-tab-item .tab-content {
+.saved-tab-item .tab-content,
+.saved-tab-item .saved-tab-content {
     flex: 1;
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: column;
+    gap: 4px;
     min-width: 0;
 }
 
@@ -1254,14 +1314,16 @@ html, body {
 }
 
 /* Tab actions */
-.saved-tab-item .tab-actions {
+.saved-tab-item .tab-actions,
+.saved-tab-item .saved-tab-actions {
     display: flex;
     gap: 4px;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
-.saved-tab-item:hover .tab-actions {
+.saved-tab-item:hover .tab-actions,
+.saved-tab-item:hover .saved-tab-actions {
     opacity: 1;
 }
 
@@ -1305,6 +1367,41 @@ html, body {
     margin: 8px 0;
 }
 
+
+/* Limit saved tab titles to 3 lines */
+.saved-tab-item .saved-tab-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  max-height: calc(1.4em * 3);
+}
+
+/* Shorten URLs to one line */
+.saved-tab-item .saved-tab-url {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+.saved-tab-item .saved-tab-url:hover {
+  text-decoration: underline;
+}
+
+/* One-line, ellipsized URL display for saved links */
+.saved-tabs-list .saved-tab-item .saved-tab-url,
+.saved-tabs-list .saved-tab-item a.saved-tab-url,
+.saved-tabs-list .saved-tab-url {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 /* =============================================================================
    STATUS MESSAGES - Success, error, and info notifications

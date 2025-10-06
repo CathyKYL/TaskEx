@@ -4,9 +4,55 @@
    tab saving, group management, and display of saved tabs
 */
 
+// --- LinkHive storage keys (support both old and new) ---
+const LH_ITEMS_KEYS = ['linkHiveItems', 'savedTabs']; // try both
+const LH_GROUPS_KEY = 'linkHiveGroups';
+
+// Returns an array of saved tabs, no matter how the data was previously stored.
+async function getSavedTabsArray() {
+  const data = await chrome.storage.local.get(LH_ITEMS_KEYS);
+  let items = data.linkHiveItems ?? data.savedTabs ?? [];
+
+  // If JSON string, parse
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items); } catch { items = []; }
+  }
+  // If object map, convert to array
+  if (items && typeof items === 'object' && !Array.isArray(items)) {
+    items = Object.values(items);
+  }
+  // Final guard
+  if (!Array.isArray(items)) items = [];
+
+  // Normalize minimal fields so renderer never breaks
+  return items.map(it => ({
+    id: it.id || crypto.randomUUID?.() || String(Date.now()+Math.random()),
+    title: it.title || '',
+    url: it.url || '',
+    note: it.note || it.notes || '',
+    group: it.group || '',
+    starred: !!it.starred
+  }));
+}
+
+// Persist back in the new canonical key
+async function setSavedTabsArray(arr) {
+  await chrome.storage.local.set({ linkHiveItems: arr });
+  // Optional: clean up the legacy key
+  await chrome.storage.local.remove('savedTabs');
+}
+
+// One-time migration (safe to run every load)
+async function migrateLinkHiveIfNeeded() {
+  const arr = await getSavedTabsArray();
+  await setSavedTabsArray(arr);
+}
+
 // =============================================================================
 // SAVE TAB MODULE - Main functionality
 // =============================================================================
+
+let savedTabsCache = [];
 
 class SaveTabManager {
     constructor() {
@@ -26,6 +72,7 @@ class SaveTabManager {
         this.handleDeleteTab = this.handleDeleteTab.bind(this);
         this.handleClearAllTabs = this.handleClearAllTabs.bind(this);
         this.handleRefreshTabs = this.handleRefreshTabs.bind(this);
+        this.handleUseCurrentUrl = this.handleUseCurrentUrl.bind(this);
         this.updateGroupSelector = this.updateGroupSelector.bind(this);
     }
 
@@ -34,6 +81,14 @@ class SaveTabManager {
      */
     async init() {
         console.log('Initializing Save Tab manager...');
+        
+        // Run migration first
+        await migrateLinkHiveIfNeeded();
+        
+        // Load starred tabs first
+        if (typeof loadStarredSavedTabs === 'function') {
+            loadStarredSavedTabs();
+        }
         
         // Get current tab information
         await this.getCurrentTabInfo();
@@ -73,7 +128,7 @@ class SaveTabManager {
         }
 
         // Cancel save tab button
-        const cancelSaveTabBtn = document.getElementById('cancel-save-tab-btn');
+        const cancelSaveTabBtn = document.getElementById('cancel-save-tab');
         if (cancelSaveTabBtn) {
             cancelSaveTabBtn.addEventListener('click', this.handleCancelSaveTab);
         }
@@ -101,28 +156,56 @@ class SaveTabManager {
         if (clearAllTabsBtn) {
             clearAllTabsBtn.addEventListener('click', this.handleClearAllTabs);
         }
+
+        // Use current URL button
+        const useCurrentUrlBtn = document.getElementById('insert-current-tab-url');
+        if (useCurrentUrlBtn) {
+            useCurrentUrlBtn.addEventListener('click', this.handleUseCurrentUrl);
+        }
     }
 
     /**
      * Show the save tab form and populate with current tab data
      */
     async showSaveTabForm() {
-        if (!this.currentTab) {
-            showError('Could not get current tab information');
+        if (typeof openSaveTabForm === 'function') {
+            await openSaveTabForm();
+        } else {
+            // Fallback to old method
+            await this.showSaveTabFormLegacy();
+        }
+    }
+
+    /**
+     * Legacy show save tab form method (fallback)
+     */
+    async showSaveTabFormLegacy() {
+        // Clear the form first
+        this.clearSaveTabForm();
+
+        try {
+            // Always get the current active tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab) {
+                this.currentTab = tab;
+                
+                // Populate form with current tab data
+                const urlInput = document.getElementById('saved-tab-url');
+                const titleInput = document.getElementById('saved-tab-title');
+                const noteInput = document.getElementById('saved-tab-note');
+
+                if (urlInput) urlInput.value = tab.url || '';
+                if (titleInput) titleInput.value = tab.title || '';
+                if (noteInput) noteInput.value = '';
+            } else {
+                showError('Could not get current tab information');
+                return;
+            }
+        } catch (err) {
+            console.error('Could not fetch current tab info:', err);
+            showError('Failed to get current tab information');
             return;
         }
-
-        // Populate form with current tab data
-        const urlInput = document.getElementById('saved-tab-url');
-        const titleInput = document.getElementById('saved-tab-title');
-        const noteInput = document.getElementById('saved-tab-note');
-
-        if (urlInput) urlInput.value = this.currentTab.url;
-        if (titleInput) titleInput.value = this.currentTab.title || '';
-        if (noteInput) noteInput.value = '';
-
-        // Update group selector
-        await this.updateGroupSelector();
 
         // Show the form
         const saveTabForm = document.getElementById('save-tab-form');
@@ -130,9 +213,32 @@ class SaveTabManager {
             saveTabForm.style.display = 'block';
             this.isFormVisible = true;
             
+            // Load groups into the dropdown
+            if (typeof loadGroupsIntoSelect === 'function') {
+                await loadGroupsIntoSelect();
+            }
+            
             // Focus on title input
+            const titleInput = document.getElementById('saved-tab-title');
             if (titleInput) titleInput.focus();
         }
+    }
+
+    /**
+     * Clear the Save Current Tab form
+     */
+    clearSaveTabForm() {
+        const titleEl = document.getElementById('saved-tab-title');
+        const noteEl  = document.getElementById('saved-tab-note');
+        const urlEl   = document.getElementById('saved-tab-url');
+        const groupEl = document.getElementById('saved-tab-group');
+        const newGroupEl = document.getElementById('inline-new-group');
+        
+        if (titleEl) titleEl.value = '';
+        if (noteEl)  noteEl.value  = '';
+        if (urlEl)   urlEl.value   = '';
+        if (groupEl) groupEl.value = '';
+        if (newGroupEl) newGroupEl.classList.add('hidden');
     }
 
     /**
@@ -151,61 +257,53 @@ class SaveTabManager {
      */
     async handleSaveTabFormSubmit(event) {
         event.preventDefault();
-        
-        const titleInput = document.getElementById('saved-tab-title');
-        const noteInput = document.getElementById('saved-tab-note');
-        const groupSelector = document.getElementById('saved-tab-group');
-        const newGroupInput = document.getElementById('new-group-name');
 
-        if (!titleInput || !groupSelector) {
-            showError('Form elements not found');
-            return;
+        const idEl   = document.getElementById('editing-savedtab-id');
+        const editingId = idEl ? idEl.value.trim() : '';
+        const title = document.getElementById('saved-tab-title').value.trim();
+        const note  = document.getElementById('saved-tab-note').value.trim();
+        const url   = document.getElementById('saved-tab-url').value.trim();
+        let group   = document.getElementById('saved-tab-group').value;
+
+        if (!title) { 
+            if (typeof showError === 'function') showError('Title is required'); 
+            return; 
         }
-
-        const title = titleInput.value.trim();
-        const note = noteInput ? noteInput.value.trim() : '';
-        let group = groupSelector.value.trim();
-
-        // Validate required fields
-        if (!title) {
-            showError('Title is required');
-            return;
+        if (!url)   { 
+            if (typeof showError === 'function') showError('URL is required'); 
+            return; 
         }
+        if (!group) group = 'General';
 
-        if (!group) {
-            showError('Please select or create a group');
-            return;
-        }
-
-        // Handle new group creation
-        if (group === 'new' && newGroupInput) {
-            group = newGroupInput.value.trim();
-            if (!group) {
-                showError('Please enter a group name');
-                return;
-            }
+        // Ensure group container exists
+        if (typeof createGroup === 'function') {
+            createGroup(group);
         }
 
         try {
-            // Save the tab
-            const tabData = {
+            const formData = {
+                id: editingId || undefined,
                 title,
-                url: this.currentTab.url,
                 note,
+                url,
                 group
             };
 
-            await saveTab(tabData);
+            await saveOrUpdateSavedTab(formData);
             
-            // Hide form and refresh display
+            if (editingId) {
+                if (typeof showStatus === 'function') showStatus('Link updated', 'success');
+            } else {
+                if (typeof showStatus === 'function') showStatus('Link saved', 'success');
+            }
+            
+            // Clear form and hide
+            this.clearSaveTabForm();
             this.hideSaveTabForm();
-            await this.loadSavedTabs();
-            
-            showStatus('Tab saved successfully!', 'success');
             
         } catch (error) {
             console.error('Error saving tab:', error);
-            showError('Failed to save tab: ' + error.message);
+            if (typeof showError === 'function') showError('Failed to save tab: ' + error.message);
         }
     }
 
@@ -213,6 +311,7 @@ class SaveTabManager {
      * Handle cancel save tab
      */
     handleCancelSaveTab() {
+        this.clearSaveTabForm();
         this.hideSaveTabForm();
     }
 
@@ -269,11 +368,11 @@ class SaveTabManager {
      */
     async loadSavedTabs() {
         try {
-            this.savedTabs = await getSavedTabs();
+            savedTabsCache = await getSavedTabsArray();   // <-- always an array now
             await this.renderSavedTabs();
         } catch (error) {
             console.error('Error loading saved tabs:', error);
-            showError('Failed to load saved tabs');
+            if (typeof showError === 'function') showError('Failed to load saved links');
         }
     }
 
@@ -281,33 +380,24 @@ class SaveTabManager {
      * Render saved tabs in the UI
      */
     async renderSavedTabs() {
-        const container = document.getElementById('saved-tabs-list');
-        const noTabsMessage = document.getElementById('no-saved-tabs-message');
-        
-        if (!container) return;
+        const list = document.getElementById('saved-tabs-list');
+        if (!list) return;
+        list.innerHTML = '';
 
-        // Clear container
-        container.innerHTML = '';
+        // Group by group name
+        const grouped = savedTabsCache.reduce((acc, it) => {
+            const key = (it.group || 'General').trim();
+            (acc[key] ||= []).push(it);
+            return acc;
+        }, {});
 
-        const groups = Object.keys(this.savedTabs);
-        
-        if (groups.length === 0) {
-            // Show no tabs message
-            if (noTabsMessage) {
-                noTabsMessage.style.display = 'block';
-            }
-            return;
-        }
+        // Within each group: starred first, keep original order otherwise
+        Object.entries(grouped).forEach(([groupName, items]) => {
+            items.sort((a,b) => (b.starred === true) - (a.starred === true));
 
-        // Hide no tabs message
-        if (noTabsMessage) {
-            noTabsMessage.style.display = 'none';
-        }
-
-        // Render each group
-        groups.forEach(groupName => {
-            const groupElement = this.createGroupElement(groupName, this.savedTabs[groupName]);
-            container.appendChild(groupElement);
+            // Use your existing group/card builder so visuals don't change.
+            const groupEl = this.createGroupElement(groupName, items);
+            list.appendChild(groupEl);
         });
     }
 
@@ -372,34 +462,40 @@ class SaveTabManager {
         }
         
         tabDiv.innerHTML = `
-            <div class="tab-content" data-url="${tab.url}">
-                <div class="tab-favicon">
-                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=16" 
-                         alt="" 
-                         onerror="this.style.display='none'">
-                </div>
-                <div class="tab-info">
-                    <div class="tab-title">${tab.title}</div>
-                    ${tab.note ? `<div class="tab-note">${tab.note}</div>` : ''}
-                    <div class="tab-url">${tab.url}</div>
-                </div>
+            <div class="saved-tab-content">
+                <div class="saved-tab-title">${tab.title}</div>
+                <a href="${tab.url}" target="_blank" rel="noopener noreferrer" class="saved-tab-url">
+                    ${tab.url}
+                </a>
             </div>
             <div class="tab-actions">
-                <button class="action-btn delete-btn" data-tab-id="${tab.id}" data-group="${groupName}" title="Delete">
-                    🗑️
-                </button>
+                <button class="action-btn edit-btn" title="Edit">✏️</button>
+                <button class="action-btn delete-btn" title="Delete">🗑️</button>
+                <button class="action-btn star-btn" title="Star">${tab.starred ? '⭐' : '☆'}</button>
             </div>
         `;
         
         // Add click handler for opening tab
-        const tabContent = tabDiv.querySelector('.tab-content');
+        const tabContent = tabDiv.querySelector('.saved-tab-content');
         tabContent.addEventListener('click', () => this.handleTabClick(tab.url));
         
-        // Add delete handler
-        const deleteBtn = tabDiv.querySelector('.delete-btn');
-        deleteBtn.addEventListener('click', (e) => {
+        // Add action button handlers
+        const editBtn = tabDiv.querySelector('.edit-btn');
+        editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.handleDeleteTab(tab.id, groupName);
+            onEditSavedTab(tab.id);
+        });
+
+        const deleteBtn = tabDiv.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await onDeleteSavedTab(tab.id);
+        });
+
+        const starBtn = tabDiv.querySelector('.star-btn');
+        starBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await onToggleStar(tab.id);
         });
         
         return tabDiv;
@@ -455,7 +551,104 @@ class SaveTabManager {
      */
     async handleRefreshTabs() {
         await this.loadSavedTabs();
-        showStatus('Tabs refreshed', 'success');
+        if (typeof showStatus === 'function') showStatus('Tabs refreshed', 'success');
+    }
+
+    /**
+     * Handle use current URL button
+     */
+    async handleUseCurrentUrl() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab && tab.url) {
+                document.getElementById('saved-tab-url').value = tab.url;
+                if (typeof showStatus === 'function') showStatus('Current page URL added', 'success');
+            }
+        } catch (err) {
+            console.error('Could not fetch current tab URL:', err);
+            if (typeof showError === 'function') showError('Failed to fetch current tab URL');
+        }
+    }
+
+    /**
+     * Get saved items from storage
+     */
+    async getItems() {
+        try {
+            const data = await chrome.storage.local.get(['savedTabs']);
+            return data.savedTabs || [];
+        } catch (error) {
+            console.error('Error getting items:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Save items to storage
+     */
+    async saveItems(items) {
+        try {
+            await chrome.storage.local.set({ savedTabs: items });
+        } catch (error) {
+            console.error('Error saving items:', error);
+            throw error;
+        }
+    }
+}
+
+// =============================================================================
+// CACHE-BASED HANDLERS
+// =============================================================================
+
+function onEditSavedTab(id) {
+    const item = savedTabsCache.find(it => it.id === id);
+    if (!item) return;
+    // Reuse the same form you use for "Save current tab", prefilled:
+    if (typeof openSaveTabForm === 'function') {
+        openSaveTabForm({
+            id: item.id,
+            title: item.title,
+            note: item.note,
+            url: item.url,
+            group: item.group
+        });
+    }
+}
+
+async function onToggleStar(id) {
+    const i = savedTabsCache.findIndex(it => it.id === id);
+    if (i === -1) return;
+    savedTabsCache[i].starred = !savedTabsCache[i].starred;
+    await setSavedTabsArray(savedTabsCache);
+    if (saveTabManager) {
+        await saveTabManager.renderSavedTabs();
+    }
+}
+
+async function onDeleteSavedTab(id) {
+    savedTabsCache = savedTabsCache.filter(it => it.id !== id);
+    await setSavedTabsArray(savedTabsCache);
+    if (saveTabManager) {
+        await saveTabManager.renderSavedTabs();
+    }
+}
+
+async function saveOrUpdateSavedTab(formData) {
+    const isUpdate = !!formData.id;
+    if (isUpdate) {
+        const idx = savedTabsCache.findIndex(it => it.id === formData.id);
+        if (idx !== -1) {
+            savedTabsCache[idx] = { ...savedTabsCache[idx], ...formData };
+        }
+    } else {
+        savedTabsCache.push({ ...formData, id: crypto.randomUUID?.() || String(Date.now()+Math.random()), starred:false });
+    }
+    await setSavedTabsArray(savedTabsCache);
+    if (saveTabManager) {
+        await saveTabManager.renderSavedTabs();
+    }
+    if (typeof resetSaveTabForm === 'function') {
+        resetSaveTabForm(); // keep fields blank after submit
     }
 }
 

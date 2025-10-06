@@ -305,6 +305,7 @@
                 <button id="clear-all-btn" class="secondary-btn rounded-square">Clear All</button>
             </div>
             
+            
             <!-- Saved Tabs List -->
             <div id="saved-tabs-list" class="saved-tabs-list">
                 <!-- Saved tabs will be dynamically inserted here -->
@@ -312,61 +313,52 @@
                 
                 <!-- Save Tab Form (hidden by default) -->
                 <div id="save-tab-form" class="save-tab-form" style="display: none;">
+                    <h4>Save Current Tab</h4>
                     <form id="save-tab-form-element">
-                        <!-- Tab URL (auto-filled, read-only) -->
-                        <div class="form-group">
-                            <label for="saved-tab-url">URL</label>
-                            <input type="url" 
-                                   id="saved-tab-url" 
-                                   class="form-input" 
-                                   readonly>
-                        </div>
+                        <!-- Hidden field for edit mode detection -->
+                        <input type="hidden" id="editing-savedtab-id" value="">
                         
-                        <!-- Tab Title (auto-filled, editable) -->
-                        <div class="form-group">
-                            <label for="saved-tab-title">Title *</label>
-                            <input type="text" 
-                                   id="saved-tab-title" 
-                                   class="form-input" 
-                                   placeholder="Enter custom title" 
-                                   maxlength="200" 
-                                   required>
-                        </div>
-                        
-                        <!-- Optional Note -->
-                        <div class="form-group">
-                            <label for="saved-tab-note">Note</label>
-                            <textarea id="saved-tab-note" 
-                                      class="form-input" 
-                                      placeholder="Add context or reminder..." 
-                                      rows="2" 
-                                      maxlength="500"></textarea>
-                        </div>
-                        
-                        <!-- Group Selector -->
-                        <div class="form-group">
+                        <!-- Group selector INSIDE the Save form -->
+                        <div class="form-group group-selector">
                             <label for="saved-tab-group">Group</label>
-                            <div class="group-selector">
-                                <select id="saved-tab-group" class="form-input">
-                                    <option value="">Select or create group...</option>
-                                </select>
-                                <input type="text" 
-                                       id="new-group-name" 
-                                       class="form-input" 
-                                       placeholder="New group name" 
-                                       maxlength="50" 
-                                       style="display: none;">
+                            <select id="saved-tab-group" class="form-input">
+                                <option value="">-- Select Group --</option>
+                                <!-- populated by JS -->
+                                <option value="__new__">+ Create New Group…</option>
+                            </select>
+
+                            <!-- Inline "create new group" row (hidden by default) -->
+                            <div id="inline-new-group" class="input-row hidden" style="margin-top:8px;">
+                                <input type="text" id="new-group-name" class="form-input" placeholder="New group name">
+                                <button type="button" id="confirm-create-group" class="secondary-btn">Create</button>
                             </div>
                         </div>
-                        
-                        <!-- Form Actions -->
+
+                        <!-- Title (first), Note (second), URL (third) -->
+                        <div class="form-group">
+                            <label for="saved-tab-title">Title *</label>
+                            <input type="text" id="saved-tab-title" class="form-input"
+                                   placeholder="Enter title" maxlength="200" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="saved-tab-note">Note</label>
+                            <textarea id="saved-tab-note" class="form-input" rows="3" maxlength="2000"
+                                      placeholder="Add note..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="saved-tab-url">URL</label>
+                            <div class="input-row">
+                                <input type="url" id="saved-tab-url" class="form-input" readonly>
+                                <!-- This button must INSERT the current page URL (not copy) -->
+                                <button type="button" id="insert-current-tab-url" class="icon-btn" title="Use current tab URL">⎘</button>
+                            </div>
+                        </div>
+
                         <div class="form-actions">
-                            <button type="button" id="cancel-save-tab-btn" class="cancel-btn">
-                                Cancel
-                            </button>
-                            <button type="submit" id="confirm-save-tab-btn" class="save-btn">
-                                Save Tab
-                            </button>
+                            <button type="button" id="cancel-save-tab" class="cancel-btn">Cancel</button>
+                            <button type="submit" id="save-link-btn" class="primary-btn">Save Link</button>
                         </div>
                     </form>
                 </div>

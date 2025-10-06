@@ -16,6 +16,8 @@ let currentPageUrl = '';         // URL of the current webpage
 let currentCalendarView = 'day'; // Current calendar view: 'day', 'week', or 'month'
 let currentContentType = 'events'; // Current content type: 'events' or 'both'
 let starredTasks = new Set();    // Set of starred task IDs (stored locally)
+let starredSavedTabs = new Set(); // link IDs
+const GROUPS_KEY = 'linkHiveGroups';
 
 // Settings variables
 let currentTheme = 'light';      // Current theme: 'light' or 'dark'
@@ -31,6 +33,27 @@ let timeFormat = '12h';          // Time format: '12h' or '24h'
  * Sets up all the interactive elements and checks authentication
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize LinkHive groups dropdown
+    loadGroups();
+    
+    // Add URL button event listener
+    document.getElementById('insert-current-tab-url')?.addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const urlInput = document.getElementById('saved-tab-url');
+        if (urlInput && tab?.url) {
+            urlInput.value = tab.url;
+            if (typeof showStatus === 'function') showStatus('Current page URL added', 'success');
+        } else {
+            if (typeof showError === 'function') showError('No current page URL available');
+        }
+    });
+
+    // Wire up LinkHive Clear All button
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    if (clearAllBtn && !clearAllBtn.__wired) {
+        clearAllBtn.addEventListener('click', clearAllLinkHive);
+        clearAllBtn.__wired = true;
+    }
     console.log('TaskEx side panel loaded!');
     
     // Load user settings first (theme, time format)
@@ -879,8 +902,13 @@ function addTask(title, notes = '', link = '') {
             // Refresh the tasks list to show the new task
             getTasks();
             
-            // Clear the form
+            // Clear the form and close it
             clearTaskForm();
+            if (typeof toggleExpandedForm === 'function') {
+                toggleExpandedForm(false);
+            } else {
+                document.getElementById('expanded-task-form').style.display = 'none';
+            }
         })
         .catch(error => {
             console.error('Error adding task:', error);
@@ -1663,7 +1691,20 @@ function setupTaskManagementListeners() {
     
     // Add Task button opens detailed form
     const addTaskBtn = document.getElementById('add-task-btn');
-    if (addTaskBtn) addTaskBtn.addEventListener('click', () => toggleExpandedForm(true));
+    if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', () => {
+            clearTaskForm();
+            // make sure we're not in edit mode
+            const editingId = document.getElementById('editing-task-id');
+            if (editingId) editingId.value = '';
+            // show the expanded form
+            if (typeof toggleExpandedForm === 'function') {
+                toggleExpandedForm(true);
+            } else {
+                document.getElementById('expanded-task-form').style.display = 'block';
+            }
+        });
+    }
     
     // Expand form button (legacy)
     const expandFormBtn = document.getElementById('expand-form-btn');
@@ -1722,7 +1763,14 @@ function setupTaskManagementListeners() {
     // Cancel task button
     const cancelTaskBtn = document.getElementById('cancel-task-btn');
     if (cancelTaskBtn) {
-        cancelTaskBtn.addEventListener('click', closeExpandedForm);
+        cancelTaskBtn.addEventListener('click', () => {
+            clearTaskForm();
+            if (typeof toggleExpandedForm === 'function') {
+                toggleExpandedForm(false);
+            } else {
+                document.getElementById('expanded-task-form').style.display = 'none';
+            }
+        });
     }
 }
 
@@ -3145,8 +3193,60 @@ function useCurrentPageTitle() {
  * Clear the task form
  */
 function clearTaskForm() {
-    document.getElementById('task-title').value = '';
-    document.getElementById('task-description').value = '';
+    const idEl = document.getElementById('editing-task-id');
+    const titleEl = document.getElementById('task-title-detailed');
+    const detailsEl = document.getElementById('task-details');
+    const urlEl = document.getElementById('task-url');
+    const dateEl = document.getElementById('custom-due-date');
+
+    if (idEl) idEl.value = '';
+    if (titleEl) titleEl.value = '';
+    if (detailsEl) detailsEl.value = '';
+    if (urlEl) urlEl.value = '';
+    if (dateEl) dateEl.value = '';
+
+    // reset any active quick due buttons
+    document.querySelectorAll('.due-btn.active').forEach(btn => btn.classList.remove('active'));
+
+    // reset the submit button text to "Save Task" (not "Update Task")
+    const submitBtn = document.getElementById('detailed-task-submit');
+    if (submitBtn) submitBtn.textContent = 'Save Task';
+}
+
+/**
+ * Clear the Save Current Tab form
+ */
+function clearSaveTabForm() {
+    const titleEl = document.getElementById('saved-tab-title');
+    const noteEl  = document.getElementById('saved-tab-note');
+    const urlEl   = document.getElementById('saved-tab-url');
+    if (titleEl) titleEl.value = '';
+    if (noteEl)  noteEl.value  = '';
+    if (urlEl)   urlEl.value   = '';
+}
+
+/**
+ * Create a new group in LinkHive
+ * @param {string} name - The name of the group to create
+ */
+function createGroup(name) {
+    if (!name || !name.trim()) {
+        if (typeof showError === 'function') showError('Group name cannot be empty');
+        return;
+    }
+
+    const savedTabsList = document.getElementById('saved-tabs-list');
+    if (!savedTabsList) return;
+
+    const groupEl = document.createElement('div');
+    groupEl.className = 'saved-tab-group';
+    groupEl.innerHTML = `
+        <h4 class="group-title">${name}</h4>
+        <div class="group-items" id="group-${name.replace(/\s+/g, '-').toLowerCase()}"></div>
+    `;
+    savedTabsList.appendChild(groupEl);
+
+    if (typeof showStatus === 'function') showStatus(`Group "${name}" created`, 'success');
 }
 
 /**
@@ -3157,6 +3257,247 @@ function clearEventForm() {
     document.getElementById('event-datetime').value = '';
     document.getElementById('event-duration').value = '1';
 }
+
+function loadStarredSavedTabs() {
+    chrome.storage.sync.get(['starredSavedTabs'], (res) => {
+        if (chrome.runtime.lastError) {
+            chrome.storage.local.get(['starredSavedTabs'], (res2) => {
+                const arr = Array.isArray(res2.starredSavedTabs) ? res2.starredSavedTabs : [];
+                starredSavedTabs = new Set(arr);
+            });
+            return;
+        }
+        const arr = Array.isArray(res.starredSavedTabs) ? res.starredSavedTabs : [];
+        starredSavedTabs = new Set(arr);
+    });
+}
+
+function saveStarredSavedTabs() {
+    const arr = Array.from(starredSavedTabs);
+    chrome.storage.sync.set({ starredSavedTabs: arr }, () => {
+        if (chrome.runtime.lastError) {
+            chrome.storage.local.set({ starredSavedTabs: arr }, () => {});
+        }
+    });
+}
+
+function isLinkStarred(id) {
+    return starredSavedTabs.has(id);
+}
+
+function toggleLinkStar(id) {
+    if (starredSavedTabs.has(id)) starredSavedTabs.delete(id);
+    else starredSavedTabs.add(id);
+    saveStarredSavedTabs();
+    renderSavedTabs(); // re-render to pin/unpin within group
+}
+
+// Helper function to get element by ID
+function el(id) {
+    return document.getElementById(id);
+}
+
+// Helper function to get active tab info
+async function getActiveTabInfo() {
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        return { title: tab?.title || '', url: tab?.url || '' };
+    } catch (e) {
+        console.error('Could not fetch current tab info:', e);
+        return { title: '', url: '' };
+    }
+}
+
+// Helper function to load groups into select
+async function loadGroupsIntoSelect() {
+    const select = el('saved-tab-group');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Select Group --</option>';
+
+    try {
+        const data = await chrome.storage.local.get(GROUPS_KEY);
+        const groups = data[GROUPS_KEY] || [];
+
+        groups.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('Failed to load groups from storage', e);
+    }
+
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Create New Group…';
+    select.appendChild(newOpt);
+}
+
+// Form handling functions
+async function openSaveTabForm(prefill = null) {
+    resetSaveTabForm();
+
+    if (prefill && prefill.id) {
+        // edit mode
+        el('editing-savedtab-id').value = prefill.id;
+        el('saved-tab-title').value = prefill.title || '';
+        el('saved-tab-note').value  = prefill.note  || '';
+        el('saved-tab-url').value   = prefill.url   || '';
+        await loadGroupsIntoSelect();
+        el('saved-tab-group').value = prefill.group || '';
+        const submit = document.getElementById('save-link-btn') || document.getElementById('save-tab-submit');
+        if (submit) submit.textContent = 'Update Link';
+    } else {
+        // NEW: always query the active tab now
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        el('saved-tab-title').value = tab?.title || '';
+        el('saved-tab-url').value   = tab?.url   || '';
+        await loadGroupsIntoSelect();
+        const submit = document.getElementById('save-link-btn') || document.getElementById('save-tab-submit');
+        if (submit) submit.textContent = 'Save Link';
+    }
+
+    // show the form
+    el('save-tab-form').style.display = 'block';
+    el('saved-tab-title').focus();
+}
+
+function resetSaveTabForm() {
+    if (el('save-tab-form-element')) el('save-tab-form-element').reset();
+    ['saved-tab-url','saved-tab-title','saved-tab-note','new-group-name'].forEach(id => { if (el(id)) el(id).value=''; });
+    if (el('saved-tab-group')) el('saved-tab-group').value = '';
+    if (el('inline-new-group')) el('inline-new-group').classList.add('hidden');
+    if (el('editing-savedtab-id')) el('editing-savedtab-id').value = '';
+    const submit = document.getElementById('save-link-btn') || document.getElementById('save-tab-submit');
+    if (submit) submit.textContent = 'Save Link';
+}
+
+async function clearAllLinkHive() {
+  if (!confirm('Clear ALL saved links and groups?')) return;
+
+  // 1) wipe storage (items, groups, starred)
+  await new Promise(res => chrome.storage.local.set({
+    linkHiveItems: [],
+    linkHiveGroups: []
+  }, res));
+  await new Promise(res => chrome.storage.sync.set({
+    starredSavedTabs: []
+  }, res));
+
+  // 2) reset any in-memory caches if they exist
+  try { if (typeof savedTabsCache !== 'undefined') savedTabsCache = []; } catch {}
+  try { if (typeof starredSavedTabs !== 'undefined') starredSavedTabs = new Set(); } catch {}
+
+  // 3) refresh UI lists safely
+  const list = document.getElementById('saved-tabs-list');
+  if (list) list.innerHTML = '';
+
+  // 4) reset the Group dropdown INSIDE the Save Current Tab form
+  const sel = document.getElementById('saved-tab-group');
+  if (typeof loadGroupsIntoSelect === 'function') {
+    // load from storage (now [])
+    await loadGroupsIntoSelect();
+    if (sel) sel.value = '';
+  } else if (sel) {
+    sel.innerHTML = '';
+    sel.appendChild(new Option('-- Select Group --', ''));
+    sel.appendChild(new Option('+ Create New Group…', '__new__'));
+  }
+
+  // hide inline new-group row if visible
+  const inline = document.getElementById('inline-new-group');
+  if (inline) inline.classList.add('hidden');
+
+  // 5) re-render (if renderer exists) and toast
+  if (typeof renderSavedTabs === 'function') await renderSavedTabs();
+  if (typeof showStatus === 'function') showStatus('All tabs cleared successfully', 'success');
+}
+
+// =============================================================================
+// LINKHIVE GROUPS - Dropdown loading, persistence, and creation
+// =============================================================================
+
+async function loadGroups() {
+    const select = document.getElementById('saved-tab-group');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Select Group --</option>';
+
+    try {
+        const data = await chrome.storage.local.get(GROUPS_KEY);
+        const groups = data[GROUPS_KEY] || [];
+
+        groups.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('Failed to load groups from storage', e);
+    }
+
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Create New Group…';
+    select.appendChild(newOpt);
+}
+
+async function saveGroups(groups) {
+    await chrome.storage.local.set({ [GROUPS_KEY]: groups });
+}
+
+document.addEventListener('change', async (e) => {
+    if (e.target && e.target.id === 'saved-tab-group') {
+        const value = e.target.value;
+        const newGroupContainer = document.getElementById('inline-new-group');
+        if (!newGroupContainer) return;
+        if (value === '__new__') {
+            newGroupContainer.classList.remove('hidden');
+            const input = document.getElementById('new-group-name');
+            if (input) input.focus();
+        } else {
+            newGroupContainer.classList.add('hidden');
+        }
+    }
+});
+
+document.addEventListener('click', async (e) => {
+    if (e.target && e.target.id === 'confirm-create-group') {
+        const input = document.getElementById('new-group-name');
+        const name = input ? input.value.trim() : '';
+        if (!name) {
+            if (typeof showError === 'function') showError('Group name cannot be empty');
+            return;
+        }
+
+        const data = await chrome.storage.local.get(GROUPS_KEY);
+        const groups = data[GROUPS_KEY] || [];
+        if (groups.includes(name)) {
+            if (typeof showError === 'function') showError('Group already exists');
+            return;
+        }
+        groups.push(name);
+        await saveGroups(groups);
+
+        // Create visual group
+        if (typeof createGroup === 'function') {
+            createGroup(name);
+        }
+
+        // Refresh dropdown
+        await loadGroups();
+
+        // Reset input UI
+        if (input) input.value = '';
+        const newGroupContainer = document.getElementById('inline-new-group');
+        if (newGroupContainer) newGroupContainer.classList.add('hidden');
+
+        if (typeof showStatus === 'function') showStatus(`Group "${name}" created`, 'success');
+    }
+});
 
 /**
  * Get information about the current webpage
